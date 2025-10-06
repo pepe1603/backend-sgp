@@ -1,0 +1,7 @@
+# En el archivo backend/.gitignore
+/target/
+/mvnw
+/mvnw.cmd
+/.idea/
+# Archivos de la raíz que no necesitas
+HELP.md
