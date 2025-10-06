@@ -4,8 +4,9 @@ import com.sgp.security.config.jwt.JwtService;
 import com.sgp.user.dto.AuthResponse;
 import com.sgp.user.dto.LoginRequest;
 import com.sgp.user.dto.RegisterRequest;
+import com.sgp.user.dto.RegisterResponse;
 import com.sgp.user.model.User;
-import com.sgp.user.service.UserService;
+import com.sgp.user.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor // Lombok: Inyección de UserService
 public class AuthController {
 
-    private final UserService userService;
+    private final AuthService authService;
     private final JwtService jwtService; // Inyectado
     private final AuthenticationManager authenticationManager; // Inyectado
 
@@ -30,33 +31,37 @@ public class AuthController {
         return "Hello World in Auth";
     }
 
+
     /**
      * Endpoint para el registro de nuevos usuarios (Feligreses/USER por defecto).
      * Ruta: POST /api/v1/auth/register
      */
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+        // 1. Delega al AuthService. La generación de JWT ya no es inmediata.
+        User newUser = authService.registerAndSendVerification(request);
 
-        // 1. Verificar si el email ya existe (Lógica manejada en el Service)
-        try {
-            User newUser = userService.registerNewUser(request);
-
-            // 2. Éxito: Aunque aún no generamos JWT, devolvemos una respuesta de éxito.
-            // Más adelante, JWT se generará aquí.
-            AuthResponse response = AuthResponse.builder()
-                    .email(newUser.getEmail())
-                    .role(newUser.getRoles().iterator().next().getName().name()) // Solo para demostración
-                    .token("PENDIENTE_JWT_GENERATION") // Placeholder
-                    .build();
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-
-        } catch (RuntimeException e) {
-            // 3. Fallo: Devuelve un error 400 (Bad Request) si el email ya existe o hay un error de rol
-            // En un caso real, esto se manejaría con un @ControllerAdvice para respuestas uniformes.
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        // 2. Devuelve un mensaje de éxito, indicando que se envió un email.
+        // Devolver el nuevo DTO de registro
+        RegisterResponse response = RegisterResponse.builder()
+                .email(request.getEmail())
+                .message("Registro exitoso. Se ha enviado un código de verificación a su email para habilitar la cuenta.")
+                .requiresVerification(true)
+                .build();
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+
+    // ⭐ NUEVO ENDPOINT PARA VERIFICACIÓN ⭐
+    @PostMapping("/verify")
+    public ResponseEntity<String> verifyAccount(@RequestParam String code) {
+        // El manejo de errores (código inválido/expirado) lo gestionará el @ControllerAdvice
+        authService.verifyAccount(code);
+        return ResponseEntity.ok("Su cuenta ha sido verificada y habilitada. ¡Bienvenido!");
+    }
+
+// El método 'login' NO CAMBIA, porque si la cuenta no está habilitada (isEnabled=false),
+// Spring Security lanzará un DisabledException que será capturado por el GlobalExceptionHandler.
 
     /**
      * Endpoint para el login de usuarios.
@@ -73,7 +78,7 @@ public class AuthController {
                 )
         );
 
-        // 2. Si la autenticación es exitosa, genera el JWT
+                // 2. Si la autenticación es exitosa, genera el JWT
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String jwtToken = jwtService.generateToken(userDetails);
 

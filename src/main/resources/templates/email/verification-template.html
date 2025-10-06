@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Verificación de Cuenta - SGP</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+        .header { background-color: #4CAF50; color: #ffffff; padding: 10px 0; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { padding: 20px; text-align: center; }
+        .code-box { background-color: #e0f7fa; color: #00796b; font-size: 28px; font-weight: bold; padding: 15px; border-radius: 4px; display: inline-block; margin: 20px 0; letter-spacing: 5px; }
+        .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #eeeeee; font-size: 12px; color: #777777; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Sistema de Gestión Parroquial (SGP)</h1>
+    </div>
+    <div class="content">
+        <p>Hola <strong th:text="${firstName}">[Nombre de Usuario]</strong>,</p>
+
+        <p>Gracias por registrarte en nuestro sistema. Para activar tu cuenta, por favor introduce el siguiente código de verificación de 6 dígitos:</p>
+
+        <div class="code-box" th:text="${code}">123456</div>
+
+        <p>Este código es válido por 15 minutos. Si no lo utilizas, deberás solicitar un reenvío.</p>
+
+        <p>Si no solicitaste este registro, por favor ignora este correo.</p>
+    </div>
+    <div class="footer">
+        <p>&copy; <span th:text="${T(java.time.Year).now()}">2025</span> SGP. Todos los derechos reservados.</p>
+    </div>
+</div>
+</body>
+</html>
