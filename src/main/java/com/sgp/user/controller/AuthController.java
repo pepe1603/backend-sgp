@@ -74,4 +74,10 @@ public class AuthController {
         // que es capturada por GlobalExceptionHandler)
         return ResponseEntity.ok(response);
     }
+    // Endpoint para solicitar un nuevo código de verificación
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerification(@RequestParam String email) {
+        authService.resendVerificationCode(email);
+        return ResponseEntity.ok("Se ha enviado un nuevo código de verificación a su email.");
+    }
 }

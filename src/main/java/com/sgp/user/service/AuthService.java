@@ -23,6 +23,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -164,4 +165,56 @@ public class AuthService {
             throw e;
         }
     }
+
+    //Nuevo MEtodo
+    @Transactional
+    public void resendVerificationCode(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado."));
+
+        if (user.isEnabled()) {
+            throw new RuntimeException("La cuenta ya está verificada.");
+        }
+
+        // 1. Eliminar cualquier token existente
+        verificationTokenRepository.deleteByUser(user);
+
+        // 2. Generar y Guardar el nuevo Código
+        String newCode = tokenService.generateAlphanumericCode();
+        VerificationToken verificationToken = new VerificationToken(newCode, user);
+        verificationTokenRepository.save(verificationToken);
+
+        // 3. Enviar el Email usdanod paltilal de reeenvio
+        sendVerificationResendEmail(user, newCode);
+    }
+    // ⭐ NUEVO MÉTODO DE ENVÍO PARA REENVÍO SOLICITADO POR EL USUARIO ⭐
+    private void sendVerificationResendEmail(User user, String code) {
+        Map<String, Object> model = new HashMap<>();
+        model.put("firstName", user.getProfile().getFirstName());
+        model.put("code", code);
+
+        mailService.sendHtmlMail(
+                user.getEmail(),
+                "Código de Verificación Solicitado (Reenvío)",
+                "email/verification-resend-template", // ⬅️ ¡Nueva plantilla para reenvío!
+                model
+        );
+    }
+
+    // ⭐ NUEVO MÉTODO DE ENVÍO PARA RECORDATORIO ⭐
+    private void sendVerificationReminderEmail(User user, String code) {
+        Map<String, Object> model = new HashMap<>();
+        model.put("firstName", user.getProfile().getFirstName());
+        model.put("code", code);
+        model.put("expireMinutes", 120); // Ejemplo: indicar que el código actual expira pronto
+
+        mailService.sendHtmlMail(
+                user.getEmail(),
+                "Recordatorio: ¡Verifica tu Cuenta SGP!",
+                "email/verification-reminder-template", // ⬅️ ¡Nueva plantilla!
+                model
+        );
+    }
+
+
 }
