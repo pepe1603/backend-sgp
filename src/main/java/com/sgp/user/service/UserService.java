@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.Set;
 
 @Service // Marca la clase como un componente de servicio de Spring
 @RequiredArgsConstructor // Lombok: Genera un constructor con todos los campos 'final' (Inyección de dependencias)
@@ -73,18 +74,17 @@ public class UserService {
             throw new RuntimeException("El perfil de usuario no existe.");
         }
 
-        // Asume el rol principal
-        String role = user.getAuthorities().stream()
-                .findFirst()
+      // Obtener TODOS los roles del usuario
+        Set<String> roles = user.getAuthorities().stream()
                 .map(auth -> auth.getAuthority())
-                .orElse("N/A");
+                .collect(java.util.stream.Collectors.toSet());
 
         return ProfileResponse.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
                 .firstName(profile.getFirstName())
                 .lastName(profile.getLastName())
-                .role(role)
+                .roles(roles)
                 .address(profile.getAddress())
                 .phone(profile.getPhone())
                 .build();
