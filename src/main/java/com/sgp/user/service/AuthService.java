@@ -3,7 +3,12 @@ package com.sgp.user.service;
 import com.sgp.common.enums.RoleName;
 import com.sgp.common.exception.EmailAlreadyExistsException;
 import com.sgp.common.service.MailService;
+import com.sgp.common.service.RandomDataService;
 import com.sgp.common.service.TokenService;
+import com.sgp.security.config.jwt.JwtService;
+import com.sgp.security.service.LoginAttemptService;
+import com.sgp.user.dto.AuthResponse;
+import com.sgp.user.dto.LoginRequest;
 import com.sgp.user.dto.RegisterRequest;
 import com.sgp.user.model.Profile;
 import com.sgp.user.model.Role;
@@ -13,6 +18,11 @@ import com.sgp.user.repository.RoleRepository;
 import com.sgp.user.repository.UserRepository;
 import com.sgp.user.repository.VerificationTokenRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +42,12 @@ public class AuthService {
     private final MailService mailService; // Para enviar el email
     private final TokenService tokenService; // Para generar el código
     private final VerificationTokenRepository verificationTokenRepository; // Nuevo
+
+    private final AuthenticationManager authenticationManager; // ⬅️ Necesitas inyectar esto
+    private final JwtService jwtService; // ⬅️ Necesitas inyectar esto
+    private final LoginAttemptService loginAttemptService; // ⬅️ Necesitas inyectar esto
+
+    private final RandomDataService randomDataService; //Se neceita apra generar datros aleatorios
 
     /**
      * Lógica de registro con verificación por email.
@@ -56,6 +72,8 @@ public class AuthService {
         Profile profile = new Profile();
         profile.setFirstName(request.getFirstName());
         profile.setLastName(request.getLastName());
+        profile.setPhone(randomDataService.generateRandomPhoneNumber());
+        profile.setAddress(randomDataService.generateRandomAddress());
         profile.setUser(user);
         user.setProfile(profile);
 
@@ -108,5 +126,42 @@ public class AuthService {
                 "email/verification-template", // <-- Debe existir en src/main/resources/templates/email/
                 model
         );
+    }
+
+    // ⭐ NUEVO MÉTODO DE LOGIN EN EL SERVICE ⭐
+    public AuthResponse login(LoginRequest request) {
+        String email = request.getEmail();
+
+        try {
+            // 1. Autenticar las credenciales (SecurityConfig ya revisó si está Locked)
+
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            email,
+                            request.getPassword()
+                    )
+            );
+
+            // 2. Si la autenticación es exitosa, resetear el contador de Redis
+            loginAttemptService.recordSuccessfulAttempt(email);
+
+            // 3. Generar JWT y construir la respuesta
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String jwtToken = jwtService.generateToken(userDetails);
+            String role = userDetails.getAuthorities().iterator().next().getAuthority();
+
+            return AuthResponse.builder()
+                    .token(jwtToken)
+                    .email(userDetails.getUsername())
+                    .role(role)
+                    .build();
+
+        } catch (BadCredentialsException e) {
+            // 4. Si falla: Registrar el intento fallido en Redis(HTTP 401)
+            loginAttemptService.recordFailedAttempt(email);
+
+            // 5. Re-lanzar la excepción para que el GlobalExceptionHandler la capture
+            throw e;
+        }
     }
 }

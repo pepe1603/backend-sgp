@@ -51,7 +51,6 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-
     // ⭐ NUEVO ENDPOINT PARA VERIFICACIÓN ⭐
     @PostMapping("/verify")
     public ResponseEntity<String> verifyAccount(@RequestParam String code) {
@@ -60,9 +59,6 @@ public class AuthController {
         return ResponseEntity.ok("Su cuenta ha sido verificada y habilitada. ¡Bienvenido!");
     }
 
-// El método 'login' NO CAMBIA, porque si la cuenta no está habilitada (isEnabled=false),
-// Spring Security lanzará un DisabledException que será capturado por el GlobalExceptionHandler.
-
     /**
      * Endpoint para el login de usuarios.
      * Ruta: POST /api/v1/auth/login
@@ -70,28 +66,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
 
-        // 1. Autentica las credenciales (usa el AuthenticationManager)
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
+        // 1. Delega toda la lógica de autenticación, generación de JWT,
+        // y registro de intentos fallidos al AuthService.
+        AuthResponse response = authService.login(request);
 
-                // 2. Si la autenticación es exitosa, genera el JWT
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String jwtToken = jwtService.generateToken(userDetails);
-
-        // Asume que el primer rol es el principal para la respuesta DTO
-        String role = userDetails.getAuthorities().iterator().next().getAuthority();
-
-        // 3. Devuelve el token al cliente
-        AuthResponse response = AuthResponse.builder()
-                .token(jwtToken)
-                .email(userDetails.getUsername())
-                .role(role)
-                .build();
-
+        // 2. Devuelve la respuesta (Si falla, AuthService lanza excepción
+        // que es capturada por GlobalExceptionHandler)
         return ResponseEntity.ok(response);
     }
 }

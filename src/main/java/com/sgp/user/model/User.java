@@ -80,7 +80,20 @@ public class User implements UserDetails {
     // Indica si la cuenta no está bloqueada
     @Override
     public boolean isAccountNonLocked() {
-        return true; // Asume que la cuenta nunca se bloquea
+        // ⚠️ ELIMINAR ESTA LÍNEA QUE SIEMPRE DEVUELVE TRUE: ⚠️
+        // return true;
+
+        // Dado que no tienes un campo 'isLocked' en la DB, y el bloqueo se maneja con Redis,
+        // es correcto dejar la lógica de bloqueo en el UserDetailsService,
+        // y mantener este método devolviendo true para evitar complejidades innecesarias con JPA.
+
+        // Sin embargo, si quisieras usar un campo persistente:
+        // return !isLocked;
+
+        // Por ahora, tu enfoque de lanzar LockedException en el UserDetailsService es la mejor solución
+        // para una arquitectura que usa Redis y no quiere modificar la tabla 'users'.
+
+        return true; // Mantenemos temporalmente, confiando en que UserDetailsService lanzará la excepción.
     }
 
     // Indica si la cuenta está habilitada (ya tienes este campo)

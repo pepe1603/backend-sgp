@@ -2,6 +2,7 @@ package com.sgp.user.service;
 
 import com.sgp.common.enums.RoleName;
 import com.sgp.common.exception.EmailAlreadyExistsException;
+import com.sgp.user.dto.ProfileResponse;
 import com.sgp.user.dto.RegisterRequest;
 import com.sgp.user.model.Profile;
 import com.sgp.user.model.Role;
@@ -9,6 +10,7 @@ import com.sgp.user.model.User;
 import com.sgp.user.repository.RoleRepository;
 import com.sgp.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -57,5 +59,35 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    /**
+     * Obtiene los datos del perfil del usuario por su email.
+     * @param email El email del usuario autenticado (Username).
+     */
+    public ProfileResponse getUserProfile(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
+
+        Profile profile = user.getProfile();
+        if (profile == null) {
+            // Esto no debería suceder si el registro es correcto, pero es buena práctica
+            throw new RuntimeException("El perfil de usuario no existe.");
+        }
+
+        // Asume el rol principal
+        String role = user.getAuthorities().stream()
+                .findFirst()
+                .map(auth -> auth.getAuthority())
+                .orElse("N/A");
+
+        return ProfileResponse.builder()
+                .userId(user.getId())
+                .email(user.getEmail())
+                .firstName(profile.getFirstName())
+                .lastName(profile.getLastName())
+                .role(role)
+                .address(profile.getAddress())
+                .phone(profile.getPhone())
+                .build();
+    }
     // Más adelante agregaremos métodos para actualizar perfil, cambiar roles, etc.
 }

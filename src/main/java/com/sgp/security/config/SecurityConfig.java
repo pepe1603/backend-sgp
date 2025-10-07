@@ -1,12 +1,15 @@
 package com.sgp.security.config;
 
 import com.sgp.security.config.jwt.JwtAuthenticationFilter;
+import com.sgp.security.service.LoginAttemptService;
+import com.sgp.user.model.User;
 import com.sgp.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -25,6 +28,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final UserRepository userRepository;
+    private final LoginAttemptService loginAttemptService;
 
     // 1. Define la cadena de filtros de seguridad HTTP
     @Bean
@@ -67,8 +71,24 @@ public class SecurityConfig {
     // 1. Carga el usuario desde la DB (por email)
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
+        return username -> {
+            // ⭐ 1. COMPROBAR BLOQUEO EN REDIS PRIMERO ⭐
+            if (loginAttemptService.isBlocked(username)) {
+                // Lanza LockedException si Redis indica que está bloqueada
+                throw new LockedException("La cuenta ha sido bloqueada debido a demasiados intentos fallidos. Intente mas tarde .");
+            }
+
+            // 2. Cargar User (que implementa UserDetails) desde la DB
+            User user = userRepository.findByEmail(username)
+                    .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
+
+            // ⭐ 3. ASEGURAR QUE USERDETAILS REFLEJE EL ESTADO DE BLOQUEO DE REDIS ⭐
+            // Aunque el UserDetails por defecto de Spring no tiene un método setBlocked,
+            // al lanzar LockedException aquí, el flujo de autenticación se detiene
+            // y el GlobalExceptionHandler lo captura. Por ahora, esto es suficiente.
+
+            return user;
+        };
     }
 
     // 2. Provee la lógica de autenticación (Recibe PasswordEncoder como argumento)
