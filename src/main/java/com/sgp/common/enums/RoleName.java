@@ -7,6 +7,8 @@ public enum RoleName {
     // Gestión de eventos, citas y coordinación de actividades
     COORDINATOR,
 
+    GESTOR,
+
     // Feligrés estándar, acceso a su perfil y reservas
     USER
 }

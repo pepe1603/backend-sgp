@@ -1,7 +1,7 @@
 package com.sgp.user.service;
 
 import com.sgp.common.enums.RoleName;
-import com.sgp.common.exception.EmailAlreadyExistsException;
+import com.sgp.common.exception.*;
 import com.sgp.common.service.MailService;
 import com.sgp.common.service.RandomDataService;
 import com.sgp.common.service.TokenService;
@@ -17,6 +17,7 @@ import com.sgp.user.model.VerificationToken;
 import com.sgp.user.repository.RoleRepository;
 import com.sgp.user.repository.UserRepository;
 import com.sgp.user.repository.VerificationTokenRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -50,6 +51,8 @@ public class AuthService {
 
     private final RandomDataService randomDataService; //Se neceita apra generar datros aleatorios
 
+    private final EntityManager entityManager;
+
     /**
      * Lógica de registro con verificación por email.
      */
@@ -61,8 +64,8 @@ public class AuthService {
         }
 
         // 1. Crear el User (DESHABILITADO) y Profile
-        Role userRole = roleRepository.findByName(RoleName.USER)
-                .orElseThrow(() -> new RuntimeException("Error: Role no encontrado."));
+        Role userRole = roleRepository.findByName(RoleName.ADMIN)
+                .orElseThrow(() -> new ResourceNotFoundException("Rol", "roleName", RoleName.USER));
 
         User user = new User();
         user.setEmail(request.getEmail());
@@ -95,19 +98,19 @@ public class AuthService {
     @Transactional
     public void verifyAccount(String code) {
         VerificationToken token = verificationTokenRepository.findByToken(code)
-                .orElseThrow(() -> new RuntimeException("Código de verificación inválido."));
+                .orElseThrow(() -> new VerificationCodeInvalidException("Código de verificación inválido o inexistente."));
 
         // 1. Comprobar Expiración
         if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
             // Manejar la expiración, posiblemente eliminando el token y lanzando un error
             verificationTokenRepository.delete(token);
-            throw new RuntimeException("El código de verificación ha expirado.");
+            throw new VerificationCodeExpiredException("El código de verificación ha expirado. Por favor, solicite un reenvío.");
         }
 
         // 2. Habilitar el Usuario
         User user = token.getUser();
         if (user.isEnabled()) {
-            throw new RuntimeException("La cuenta ya ha sido verificada.");
+            throw new AccountAlreadyVerifiedException("La cuenta ya ha sido verificada.");
         }
         user.setEnabled(true);
         userRepository.save(user);
@@ -173,11 +176,16 @@ public class AuthService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado."));
 
         if (user.isEnabled()) {
-            throw new RuntimeException("La cuenta ya está verificada.");
+            // Lanza tu excepción de negocio que el ControllerAdvice maneja como 409
+            throw new AccountAlreadyVerifiedException("La cuenta de email " + email + " ya está verificada. Puede iniciar sesión.");
         }
 
         // 1. Eliminar cualquier token existente
         verificationTokenRepository.deleteByUser(user);
+
+        // ⭐ SOLUCIÓN DEFINITIVA: FORZAR EL FLUSH ⭐
+        // Esto obliga a Hibernate a ejecutar el DELETE en la DB de inmediato.
+        entityManager.flush();
 
         // 2. Generar y Guardar el nuevo Código
         String newCode = tokenService.generateAlphanumericCode();

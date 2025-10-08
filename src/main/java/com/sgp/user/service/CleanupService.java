@@ -45,9 +45,13 @@ public class CleanupService {
 
         // 2. Eliminar tokens asociados y luego los usuarios
         usersToCleanup.forEach(user -> {
+            // ⭐ ESTRATEGIA BORRADO DIRECTO: Eficiente para lotes (limpieza programada).
+            // Este método ahora es seguro debido a las anotaciones en el Repositorio.
             tokenRepository.deleteByUser(user); // Elimina el token primero
+
             userRepository.delete(user);        // Elimina el usuario (el perfil se va en cascada)
         });
+
 
         log.info("Limpieza completada. Se eliminaron {} usuarios no verificados.", usersToCleanup.size());
     }
