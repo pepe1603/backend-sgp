@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -25,10 +26,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity // Habilita la configuración de seguridad de Spring
 @RequiredArgsConstructor
+@EnableMethodSecurity // ⬅️ ¡ESTO ES LO QUE FALTA! Habilita @PreAuthorize a nivel global
 public class SecurityConfig {
 
     private final UserRepository userRepository;
     private final LoginAttemptService loginAttemptService;
+    private final AuthExceptionHandler authExceptionHandler; // ⬅️ INYECTAR par interceptar las exceptiones 401 y 403 y el ContorllerAdvice lo aapture
 
     // 1. Define la cadena de filtros de seguridad HTTP
     @Bean
@@ -42,6 +45,10 @@ public class SecurityConfig {
         // Deshabilita la protección CSRF (necesaria para APIs REST sin estado)
         http.csrf(csrf -> csrf.disable())
 
+                .exceptionHandling(handling -> handling
+                        .authenticationEntryPoint(authExceptionHandler) // ⬅️ MANEJO 401
+                        .accessDeniedHandler(authExceptionHandler)      // ⬅️ MANEJO 403
+                )
                 // Define el manejo de sesiones como "STATELESS" (sin estado)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 

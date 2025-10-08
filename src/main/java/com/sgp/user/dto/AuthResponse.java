@@ -11,6 +11,7 @@ public class AuthResponse {
 
     private String token;
     private String email;
-    private Set<String> roles; // <-- CAMBIAR a plural y Set
+    private String role; // El rol principal del usuario
+    @Builder.Default
     private String tokenType = "Bearer";
 }
