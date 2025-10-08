@@ -33,6 +33,14 @@ public class RoleInitializer implements CommandLineRunner {
             System.out.println("Rol 'COORDINATOR' creado exitosamente.");
         }
 
+        // 3. Verificar y Crear el Rol GESTOR
+        if (roleRepository.findByName(RoleName.GESTOR).isEmpty()) {
+            Role gestorRole = new Role();
+            gestorRole.setName(RoleName.GESTOR);
+            roleRepository.save(gestorRole);
+            System.out.println("Rol 'GESTOR' creado exitosamente.");
+        }
+
         // 3. Verificar y Crear el Rol ADMIN
         if (roleRepository.findByName(RoleName.ADMIN).isEmpty()) {
             Role adminRole = new Role();
