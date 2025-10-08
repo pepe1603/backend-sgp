@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -41,12 +42,13 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
-    private final MailService mailService; // Para enviar el email
+//    private final MailService mailService; // Para enviar el email -> eLIMIANRR OP COENMNTAR
     private final TokenService tokenService; // Para generar el código
     private final VerificationTokenRepository verificationTokenRepository; // Nuevo
 
     private final AuthenticationManager authenticationManager; // ⬅️ Necesitas inyectar esto
     private final JwtService jwtService; // ⬅️ Necesitas inyectar esto
+    private final MailProducer mailProducer; // ⬅️ Inyectar el productor
     private final LoginAttemptService loginAttemptService; // ⬅️ Necesitas inyectar esto
 
     private final RandomDataService randomDataService; //Se neceita apra generar datros aleatorios
@@ -124,10 +126,11 @@ public class AuthService {
         model.put("firstName", user.getProfile().getFirstName());
         model.put("code", code);
 
-        mailService.sendHtmlMail(
+        // ⭐ ¡AQUÍ ESTÁ EL CAMBIO CRÍTICO! ⭐
+        mailProducer.sendMailMessage(
                 user.getEmail(),
                 "Verificación de Cuenta SGP",
-                "email/verification-template", // <-- Debe existir en src/main/resources/templates/email/
+                "email/verification-template",
                 model
         );
     }
@@ -152,12 +155,14 @@ public class AuthService {
             // 3. Generar JWT y construir la respuesta
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String jwtToken = jwtService.generateToken(userDetails);
-            String role = userDetails.getAuthorities().iterator().next().getAuthority();
+            Set<String> roles = userDetails.getAuthorities().stream().map(auth -> auth.getAuthority()).collect(java.util.stream.Collectors.toSet()); // <-- Obtener todos los roles
+
 
             return AuthResponse.builder()
                     .token(jwtToken)
                     .email(userDetails.getUsername())
-                    .role(role)
+                    .roles(roles)
+                    .tokenType("Bearer")
                     .build();
 
         } catch (BadCredentialsException e) {
@@ -201,7 +206,8 @@ public class AuthService {
         model.put("firstName", user.getProfile().getFirstName());
         model.put("code", code);
 
-        mailService.sendHtmlMail(
+        //Cambio critico aqui
+        mailProducer.sendMailMessage(
                 user.getEmail(),
                 "Código de Verificación Solicitado (Reenvío)",
                 "email/verification-resend-template", // ⬅️ ¡Nueva plantilla para reenvío!
@@ -216,7 +222,8 @@ public class AuthService {
         model.put("code", code);
         model.put("expireMinutes", 120); // Ejemplo: indicar que el código actual expira pronto
 
-        mailService.sendHtmlMail(
+        //Cambio critico aqui
+        mailProducer.sendMailMessage(
                 user.getEmail(),
                 "Recordatorio: ¡Verifica tu Cuenta SGP!",
                 "email/verification-reminder-template", // ⬅️ ¡Nueva plantilla!

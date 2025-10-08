@@ -3,6 +3,8 @@ package com.sgp.user.dto;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.Set;
+
 @Data // Lombok
 @Builder // Lombok para crear objetos de respuesta fácilmente
 public class AuthResponse {
