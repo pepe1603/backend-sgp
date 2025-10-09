@@ -2,6 +2,7 @@ package com.sgp.user.service;
 
 import com.sgp.common.enums.RoleName;
 import com.sgp.common.exception.*;
+import com.sgp.common.queue.MailProducer;
 import com.sgp.common.service.MailService;
 import com.sgp.common.service.RandomDataService;
 import com.sgp.common.service.TokenService;
@@ -161,7 +162,7 @@ public class AuthService {
             return AuthResponse.builder()
                     .token(jwtToken)
                     .email(userDetails.getUsername())
-                    .roles(roles)
+                    .roles(roles)//error aqui
                     .tokenType("Bearer")
                     .build();
 
