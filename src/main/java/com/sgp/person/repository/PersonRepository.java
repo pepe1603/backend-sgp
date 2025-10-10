@@ -33,4 +33,9 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
 
     // Retorna todas las Personas asociadas a un ID de Parroquia específico.
     List<Person> findByParish_Id(Long parishId);
+
+    /**
+     * Busca una Persona por el ID del Usuario asociado.
+     */
+    Optional<Person> findByUser_Id(Long userId); // ⭐ NUEVO MÉTODO DE BÚSQUEDA ⭐
 }

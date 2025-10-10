@@ -3,6 +3,7 @@ package com.sgp.person.model;
 import com.sgp.common.enums.Gender;
 import com.sgp.common.model.Auditable;
 import com.sgp.parish.model.Parish;
+import com.sgp.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -53,7 +54,17 @@ public class Person extends Auditable {
     @JoinColumn(name = "parish_id", nullable = false)
     private Parish parish;
 
-    // Campo de estado (Activo/Inactivo)
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive = true;
+    // --- Relación Opcional con Usuario de Sistema ---
+    // Mapeo: UNA persona puede estar asociada a UN usuario (feligrés).
+    // Usamos LAZY para evitar bucles de carga accidental.
+    // Usamos 'unique = true' para asegurar que un User solo se asocie a una Person.
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true, nullable = true) // 'user_id' será la FK
+    private User user;
+
+    // ⭐ MÉTODO CALCULADO PARA OBTENER EL NOMBRE COMPLETO ⭐
+    @Transient // Indica a JPA que este campo no debe ser persistido en la DB
+    public String getFullName() {
+        return this.firstName + " " + this.lastName;
+    }
 }

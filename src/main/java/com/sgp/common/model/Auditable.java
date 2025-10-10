@@ -1,8 +1,10 @@
 package com.sgp.common.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -31,4 +33,9 @@ public abstract class Auditable {
     /**
      * Nota: Para que @CreatedBy y @LastModifiedBy funcionen, debes tener una configuración de auditoría en Spring Boot (usando AuditorAware) que le diga a JPA cómo obtener el nombre (o ID) del usuario logueado actualmente.
      * */
+
+    // Campo de estado (Activo/Inactivo) o eliminación lógica,
+    @Setter
+    @Column(name = "is_active", nullable = false, columnDefinition = "boolean default true" )
+    private boolean isActive = true;
 }
