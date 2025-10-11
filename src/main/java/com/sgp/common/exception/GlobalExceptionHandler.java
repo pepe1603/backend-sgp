@@ -195,6 +195,7 @@ public class GlobalExceptionHandler {
     }
 
     // 10. Manejo de acceso denegado (AccessDeniedException) -> HTTP 403
+    // Manejador para la excepción de Spring Security por falta de permisos (@PreAuthorize)
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(
             org.springframework.security.access.AccessDeniedException ex, HttpServletRequest request) {
@@ -414,6 +415,22 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.FORBIDDEN.value())
                 .error("Authorization Denied")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
+    // 25: Transición de estado no válida (InvalidStateTransitionException) -> HTTP 409 ⭐
+    @ExceptionHandler(InvalidStateTransitionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidStateTransitionException(
+            InvalidStateTransitionException ex, HttpServletRequest request) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Invalid State Transition")
                 .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .build();
