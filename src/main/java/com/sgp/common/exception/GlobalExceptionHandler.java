@@ -405,6 +405,24 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
+    //24.- Manejador para acceso a un recurso parea RolName no esta autorizado
+    @ExceptionHandler(ResourceNotAuthorizedException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotAuthorizedException(
+            ResourceNotAuthorizedException ex, HttpServletRequest request) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Authorization Denied")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
+
+
     // 2x. Manejo genérico (Fallback) -> HTTP 500
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(

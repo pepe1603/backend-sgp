@@ -13,7 +13,9 @@ public interface PersonMapper {
     // Ignoramos el ID de la parroquia ya que será inyectado manualmente en el servicio.
     @Mapping(target = "parish", ignore = true)
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "isActive", constant = "true") // Por defecto, una nueva persona está activa
+    // Por defecto, una nueva persona está activa,
+    // ⭐ CORRECCIÓN: ELIMINAR ESTA LÍNEA, el valor por defecto en Auditable se encargará.
+    // @Mapping(target = "isActive", constant = "true")
     Person toEntity(PersonRequest request);
 
     // --- Mapeo Entity a Response (Lectura) ---
