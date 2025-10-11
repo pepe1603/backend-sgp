@@ -50,7 +50,20 @@ public class AuthExceptionHandler implements AuthenticationEntryPoint, AccessDen
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
         // Se añade request.getRequestURI() para el path
-        buildResponse(response, HttpStatus.UNAUTHORIZED, "Unauthorized", "Acceso denegado. Se requiere autenticacion (Token JWT).", request.getRequestURI());
+        // ⭐ CAMBIO CLAVE: Usar el mensaje de la excepción recibida ⭐
+        // Si el mensaje de la excepción es nulo o vacío, usar el mensaje genérico.
+        String errorMessage = authException.getMessage();
+        if (errorMessage == null || errorMessage.trim().isEmpty()) {
+            errorMessage = "Acceso denegado. Se requiere autenticacion (Token JWT).";
+        }
+
+        buildResponse(
+                response,
+                HttpStatus.UNAUTHORIZED,
+                "Unauthorized",
+                errorMessage, // ⬅️ AHORA USAMOS EL MENSAJE DE LA EXCEPCIÓN
+                request.getRequestURI()
+        );
     }
 
     // Maneja 403 Forbidden (Token válido pero rol insuficiente)
