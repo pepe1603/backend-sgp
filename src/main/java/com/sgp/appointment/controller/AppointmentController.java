@@ -6,6 +6,10 @@ import com.sgp.appointment.service.AppointmentService;
 import com.sgp.common.enums.AppointmentStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,22 +43,28 @@ public class AppointmentController {
         return ResponseEntity.ok(response);
     }
 
-    // --- 3. OBTENER TODAS LAS CITAS (Lista de Gestión) ---
-    // Lista general para el personal interno.
+    // --------------------------------------------------------------------------------------------------
+    // ⭐ 3. OBTENER TODAS LAS CITAS (Paginada y Filtrada) - MÉTODO UNIFICADO ⭐
+    // --------------------------------------------------------------------------------------------------
+    /**
+     * GET /api/v1/appointments?page=0&size=10&sort=date,desc&status=PENDING
+     * Obtiene una lista paginada de citas para el panel de gestión.
+     *
+     * @param pageable Parámetros de paginación (page, size) y ordenamiento (sort).
+     * @param status Filtro opcional por el estado de la cita.
+     * @return Una respuesta Page con la lista de DTOs de citas.
+     */
     @PreAuthorize("hasAnyAuthority('ADMIN', 'GESTOR', 'COORDINATOR')")
     @GetMapping
-    public ResponseEntity<List<AppointmentResponse>> getAllAppointments() {
-        List<AppointmentResponse> response = appointmentService.getAllAppointments();
-        return ResponseEntity.ok(response);
-    }
-
-    // --- 4. OBTENER CITAS POR ESTADO ---
-    // Útil para filtrar el panel de gestión (ej. solo ver PENDING).
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'GESTOR', 'COORDINATOR')")
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<AppointmentResponse>> getAppointmentsByStatus(@PathVariable AppointmentStatus status) {
-        List<AppointmentResponse> response = appointmentService.getAppointmentsByStatus(status);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<Page<AppointmentResponse>> findAllAppointments(
+            // Configuración por defecto si no se envían parámetros: página 0, 10 elementos, ordenado por fecha descendente.
+            @PageableDefault(size = 10, sort = "appointmentDateTime", direction = Sort.Direction.DESC)
+            Pageable pageable,
+            // El estado es un RequestParam opcional.
+            @RequestParam(required = false) AppointmentStatus status
+    ) {
+        Page<AppointmentResponse> responsePage = appointmentService.findAllAppointments(status, pageable);
+        return ResponseEntity.ok(responsePage);
     }
 
     // --- 5. ACTUALIZAR ESTADO DE CITA (Aprobación/Rechazo/Completado/CANCELAR) ---
