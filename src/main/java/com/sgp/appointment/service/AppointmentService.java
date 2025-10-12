@@ -3,6 +3,8 @@ package com.sgp.appointment.service;
 import com.sgp.appointment.dto.AppointmentRequest;
 import com.sgp.appointment.dto.AppointmentResponse;
 import com.sgp.common.enums.AppointmentStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -24,21 +26,20 @@ public interface AppointmentService {
     AppointmentResponse getAppointmentById(Long id);
 
     /**
-     * Obtiene todas las citas.
-     * @return Lista de DTOs de citas.
+     * Obtiene una lista paginada de citas, opcionalmente filtrada por estado.
+     * Este método reemplaza a los antiguos getAllAppointments y getAppointmentsByStatus.
+     * Solo accesible por roles de gestión (ADMIN, GESTOR, COORDINATOR).
+     *
+     * @param status Estado de la cita para filtrar (opcional, si es null trae todas).
+     * @param pageable Objeto que contiene información de paginación y ordenamiento.
+     * @return Un objeto Page con los DTOs de las citas.
      */
-    List<AppointmentResponse> getAllAppointments();
+    Page<AppointmentResponse> findAllAppointments(AppointmentStatus status, Pageable pageable);
+
 
     // --- READ (My Appointments) ---
     @Transactional(readOnly = true)
     List<AppointmentResponse> getMyAppointments();
-
-    /**
-     * Obtiene todas las citas con un estado específico.
-     * @param status Estado de la cita (e.g., PENDING, CONFIRMED).
-     * @return Lista de DTOs de citas.
-     */
-    List<AppointmentResponse> getAppointmentsByStatus(AppointmentStatus status);
 
     /**
      * Obtiene todas las citas de una persona específica.
