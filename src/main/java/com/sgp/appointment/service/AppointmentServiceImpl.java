@@ -17,6 +17,8 @@ import com.sgp.person.repository.PersonRepository;
 import com.sgp.sacrament.model.Sacrament;
 import com.sgp.sacrament.repository.SacramentRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +46,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     // Roles que tienen acceso de gestión (ADMIN, GESTOR, COORDINATOR)
     private static final Set<String> MANAGEMENT_ROLES = Set.of("ADMIN", "GESTOR", "COORDINATOR");
 
-    // --- Métodos de Ayuda de Búsqueda de Entidades Básicas (Se mantienen aquí) ---
+    // --- Métodos de Ayuda de Búsqueda de Entidades Básicas  ---
 
     private Appointment findAppointmentById(Long id) {
         return appointmentRepository.findById(id)
@@ -67,7 +69,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException(RESOURCE_SACRAMENT, "ID", id));
     }
 
-    // --- LÓGICA DE VALIDACIÓN DE PROPIEDAD (Ajustada) ---
+    // --- LÓGICA DE VALIDACIÓN DE PROPIEDAD  ---
     private void validateAppointmentOwnership(Appointment appointment) {
         // Si el usuario *no* es de gestión, debe ser el dueño
         if (!securityContextService.isManagementUser()) { // ⭐ USANDO EL SERVICIO ⭐
@@ -119,14 +121,30 @@ public class AppointmentServiceImpl implements AppointmentService {
         return appointmentMapper.toResponse(appointment);
     }
 
-    // --- READ (All) ---
-    // Este método queda para roles de gestión (ADMIN, GESTOR) y se controla en el Controller.
+    // --- READ (Paginación y Filtrado - Método Unificado) ---
+    /**
+     * Obtiene una página de citas, filtrando opcionalmente por estado.
+     * Este método utiliza Pageable para la paginación y ordenamiento.
+     *
+     * @param status Estado por el cual filtrar (null para obtener todas).
+     * @param pageable Configuración de paginación y ordenamiento.
+     * @return Una Page de AppointmentResponse.
+     */
     @Override
     @Transactional(readOnly = true)
-    public List<AppointmentResponse> getAllAppointments() {
-        return appointmentRepository.findAll().stream()
-                .map(appointmentMapper::toResponse)
-                .collect(Collectors.toList());
+    public Page<AppointmentResponse> findAllAppointments(AppointmentStatus status, Pageable pageable) {
+        Page<Appointment> appointmentsPage;
+
+        // Si se proporciona un estado, usamos el método de repositorio que filtra por estado.
+        if (status != null) {
+            appointmentsPage = appointmentRepository.findAllByStatus(status, pageable);
+        } else {
+            // Si no se proporciona estado, usamos el findAll estándar de JpaRepository.
+            appointmentsPage = appointmentRepository.findAll(pageable);
+        }
+
+        // Mapeamos el Page de entidades a un Page de DTOs.
+        return appointmentsPage.map(appointmentMapper::toResponse);
     }
 
     // --- READ (My Appointments) ---
@@ -135,16 +153,6 @@ public class AppointmentServiceImpl implements AppointmentService {
     public List<AppointmentResponse> getMyAppointments() {
         Person currentUserPerson = securityContextService.findPersonForCurrentUser(); // ⭐ USANDO EL SERVICIO ⭐
         return appointmentRepository.findAllByPersonId(currentUserPerson.getId()).stream()
-                .map(appointmentMapper::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    // --- READ (By Status) ---
-    // Este método se usa en la gestión y se controla en el Controller.
-    @Override
-    @Transactional(readOnly = true)
-    public List<AppointmentResponse> getAppointmentsByStatus(AppointmentStatus status) {
-        return appointmentRepository.findAllByStatus(status).stream()
                 .map(appointmentMapper::toResponse)
                 .collect(Collectors.toList());
     }
