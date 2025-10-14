@@ -1,6 +1,7 @@
-package com.sgp.user.model;
+package com.sgp.auth.model;
 
 
+import com.sgp.user.model.User;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;

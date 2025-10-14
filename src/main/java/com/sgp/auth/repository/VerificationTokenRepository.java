@@ -1,7 +1,7 @@
-package com.sgp.user.repository;
+package com.sgp.auth.repository;
 
 import com.sgp.user.model.User;
-import com.sgp.user.model.VerificationToken;
+import com.sgp.auth.model.VerificationToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 

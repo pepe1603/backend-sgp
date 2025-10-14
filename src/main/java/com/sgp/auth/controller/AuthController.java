@@ -1,20 +1,17 @@
-package com.sgp.user.controller;
+package com.sgp.auth.controller;
 
 import com.sgp.security.config.jwt.JwtService;
-import com.sgp.user.dto.AuthResponse;
-import com.sgp.user.dto.LoginRequest;
-import com.sgp.user.dto.RegisterRequest;
-import com.sgp.user.dto.RegisterResponse;
+import com.sgp.auth.dto.AuthResponse;
+import com.sgp.auth.dto.LoginRequest;
+import com.sgp.auth.dto.RegisterRequest;
+import com.sgp.auth.dto.RegisterResponse;
 import com.sgp.user.model.User;
-import com.sgp.user.service.AuthService;
+import com.sgp.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController // Indica que esta clase es un Controller REST

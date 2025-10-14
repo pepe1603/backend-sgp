@@ -12,7 +12,7 @@ public class ProfileResponse {
     private String email;
     private String firstName;
     private String lastName;
-    private Set<String> roles; // <-- CAMBIAR a plural y Set
+    private Set<String> roles;
     private String address;
     private String phone;
 }
