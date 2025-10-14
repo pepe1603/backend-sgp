@@ -15,6 +15,8 @@ import com.sgp.sacrament.repository.SacramentRepository;
 import com.sgp.sacrament.repository.SacramentDetailRepository; // Asumo que crearemos este
 import com.sgp.user.model.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -118,13 +120,26 @@ public class SacramentServiceImpl implements SacramentService {
         return sacramentMapper.toResponse(sacrament, detail);
     }
 
-    // --- READ (All) ---
+    // ⭐ NUEVO/MODIFICADO: Implementación de Paginación y Filtrado Unificado ⭐
     @Override
     @Transactional(readOnly = true)
-    public List<SacramentResponse> getAllSacraments() {
-        return sacramentRepository.findAll().stream()
-                .map(s -> sacramentMapper.toResponse(s, s.getSacramentDetail()))
-                .collect(Collectors.toList());
+    public Page<SacramentResponse> findAllSacraments(Long personId, Pageable pageable) {
+        Page<Sacrament> sacramentPage;
+
+        // 1. Decidir si filtrar por persona
+        if (personId != null) {
+            // Opcional: Validar la existencia de la persona si no se espera que el filtro falle
+            if (!personRepository.existsById(personId)) {
+                throw new ResourceNotFoundException(RESOURCE_PERSON, "id", personId);
+            }
+            sacramentPage = sacramentRepository.findByPerson_Id(personId, pageable);
+        } else {
+            // 2. Si no hay filtro, buscar todos paginados
+            sacramentPage = sacramentRepository.findAll(pageable);
+        }
+
+        // 3. Mapear Page<Sacrament> a Page<SacramentResponse>
+        return sacramentPage.map(s -> sacramentMapper.toResponse(s, s.getSacramentDetail()));
     }
 
     // --- READ (By Person) ---

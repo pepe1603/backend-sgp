@@ -5,6 +5,10 @@ import com.sgp.sacrament.dto.SacramentResponse;
 import com.sgp.sacrament.service.SacramentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize; // Importación clave
@@ -37,25 +41,28 @@ public class SacramentController {
         return ResponseEntity.ok(response);
     }
 
-    // 3. OBTENER TODOS LOS SACRAMENTOS
-    // Lista general para la gestión.
+// ⭐ MODIFICADO/UNIFICADO: OBTENER TODOS LOS SACRAMENTOS (Paginada y Opcionalmente Filtrada por Persona) ⭐
+    /**
+     * GET /api/v1/sacraments?page=0&size=20&sort=celebrationDate,desc&personId=1
+     * Obtiene una lista paginada de registros canónicos.
+     *
+     * @param pageable Parámetros de paginación (page, size) y ordenamiento (sort).
+     * @param personId Filtro opcional por ID de la Persona receptora.
+     * @return Una respuesta Page con la lista de DTOs de sacramentos.
+     */
     @PreAuthorize("hasAnyAuthority('ADMIN', 'GESTOR', 'COORDINATOR')")
-    @GetMapping
-    public ResponseEntity<List<SacramentResponse>> getAllSacraments() {
-        List<SacramentResponse> response = sacramentService.getAllSacraments();
-        return ResponseEntity.ok(response);
+    @GetMapping // Endpoint Unificado
+    public ResponseEntity<Page<SacramentResponse>> findAllSacraments(
+            // Por defecto, ordenamos por fecha de celebración descendente.
+            @PageableDefault(size = 20, sort = "celebrationDate", direction = Sort.Direction.DESC)
+            Pageable pageable,
+            // El ID de la persona es un filtro opcional
+            @RequestParam(required = false) Long personId
+    ) {
+        Page<SacramentResponse> responsePage = sacramentService.findAllSacraments(personId, pageable);
+        return ResponseEntity.ok(responsePage);
     }
 
-    // 4. OBTENER SACRAMENTOS POR PERSONA
-    // Útil para coordinadores y gestores que consultan el historial de un feligrés.
-    // El USER simple podría acceder a *sus propios* sacramentos (requiere lógica de seguridad a nivel de servicio),
-    // pero a nivel de controlador, restringimos la búsqueda por ID a los roles internos.
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'GESTOR', 'COORDINATOR')")
-    @GetMapping("/person/{personId}")
-    public ResponseEntity<List<SacramentResponse>> getSacramentsByPersonId(@PathVariable Long personId) {
-        List<SacramentResponse> response = sacramentService.getSacramentsByPersonId(personId);
-        return ResponseEntity.ok(response);
-    }
 
     // 5. ACTUALIZAR SACRAMENTO
     // Acceso restringido para modificar un registro existente (ADMIN, GESTOR).
