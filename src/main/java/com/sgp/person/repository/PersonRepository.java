@@ -1,6 +1,8 @@
 package com.sgp.person.repository;
 
 import com.sgp.person.model.Person;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -31,8 +33,14 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
             String identificationType,
             String identificationNumber);
 
-    // Retorna todas las Personas asociadas a un ID de Parroquia específico.
-    List<Person> findByParish_Id(Long parishId);
+// ⭐ NUEVO MÉTODO PARA PAGINACIÓN POR PARROQUIA ⭐
+    /**
+     * Retorna una página de Personas asociadas a un ID de Parroquia específico, aplicando paginación y ordenamiento.
+     * @param parishId ID de la parroquia.
+     * @param pageable Configuración de paginación y ordenamiento.
+     * @return Una Page de Person.
+     */
+    Page<Person> findByParish_Id(Long parishId, Pageable pageable);
 
     /**
      * Busca una Persona por el ID del Usuario asociado.

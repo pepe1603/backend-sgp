@@ -9,6 +9,8 @@ import com.sgp.person.dto.PersonResponse;
 import com.sgp.person.model.Person;
 import com.sgp.person.repository.PersonRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,15 +61,6 @@ public class PersonServiceImpl implements PersonService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<PersonResponse> getAllPeople() {
-        return personRepository.findAll().stream()
-                .map(personMapper::toResponse)
-                .collect(Collectors.toList());
-    }
-
-
-    @Override
     @Transactional
     public PersonResponse updatePerson(Long id, PersonRequest request) {
         Person person = personRepository.findById(id)
@@ -110,18 +103,26 @@ public class PersonServiceImpl implements PersonService {
         person.setActive(false);
         personRepository.save(person);
     }
-    //Metod adcicionalñ de cotnrato
+    // ⭐ NUEVO/MODIFICADO: Implementación de Paginación y Filtrado Unificado ⭐
     @Override
     @Transactional(readOnly = true)
-    public List<PersonResponse> getPeopleByParishId(Long parishId) {
-        // 1. Opcional: Validar que la parroquia exista para lanzar un 404 claro.
-        if (!parishRepository.existsById(parishId)) {
-            throw new ResourceNotFoundException(RESOURCE_PARISH, "id", parishId);
+    public Page<PersonResponse> findAllPeople(Long parishId, Pageable pageable) {
+        Page<Person> personPage;
+
+        // Si se proporciona un parishId, filtramos por parroquia
+        if (parishId != null) {
+            // Opcional: Validar la existencia de la parroquia antes de filtrar
+            if (!parishRepository.existsById(parishId)) {
+                throw new ResourceNotFoundException(RESOURCE_PARISH, "id", parishId);
+            }
+            personPage = personRepository.findByParish_Id(parishId, pageable);
+        } else {
+            // Si no hay filtro, buscamos todos paginados
+            personPage = personRepository.findAll(pageable);
         }
 
-        // ⭐ SOLUCIÓN: Usar un método de repositorio optimizado
-        return personRepository.findByParish_Id(parishId).stream() // ⬅️ Consulta optimizada en DB
-                .map(personMapper::toResponse)
-                .collect(Collectors.toList());
+        // Mapeamos Page<Person> a Page<PersonResponse>
+        return personPage.map(personMapper::toResponse);
     }
+
 }
