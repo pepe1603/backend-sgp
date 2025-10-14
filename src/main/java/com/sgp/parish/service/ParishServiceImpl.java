@@ -7,6 +7,8 @@ import com.sgp.parish.dto.ParishResponse;
 import com.sgp.parish.model.Parish;
 import com.sgp.parish.repository.ParishRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,12 +48,15 @@ public class ParishServiceImpl implements ParishService {
         return parishMapper.toResponse(parish);
     }
 
+    // ⭐ NUEVO/MODIFICADO: Implementación de Paginación ⭐
     @Override
     @Transactional(readOnly = true)
-    public List<ParishResponse> getAllParishes() {
-        return parishRepository.findAll().stream()
-                .map(parishMapper::toResponse)
-                .collect(Collectors.toList());
+    public Page<ParishResponse> findAllParishes(Pageable pageable) {
+        // 1. Obtener la página de entidades Parish
+        Page<Parish> parishPage = parishRepository.findAll(pageable);
+
+        // 2. Mapear Page<Parish> a Page<ParishResponse>
+        return parishPage.map(parishMapper::toResponse);
     }
 
     @Override

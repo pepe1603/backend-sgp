@@ -5,6 +5,10 @@ import com.sgp.parish.dto.ParishResponse;
 import com.sgp.parish.service.ParishService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,13 +31,23 @@ public class ParishController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    // Listar todas las Parroquias (Accesible para todos los roles internos)
-    // El USER simple también puede necesitar ver esta lista para referencia.
+    // ⭐ MODIFICADO: Listar todas las Parroquias (Ahora Paginado y Ordenado) ⭐
+    /**
+     * GET /api/v1/parishes?page=0&size=10&sort=name,asc
+     * Obtiene una lista paginada de parroquias.
+     *
+     * @param pageable Parámetros de paginación (page, size) y ordenamiento (sort).
+     * @return Una respuesta Page con la lista de DTOs de parroquias.
+     */
     @PreAuthorize("hasAnyAuthority('ADMIN', 'GESTOR', 'COORDINATOR', 'USER')")
-    @GetMapping
-    public ResponseEntity<List<ParishResponse>> getAllParishes() {
-        // Nota: Considera usar paginación para listas grandes.
-        return ResponseEntity.ok(parishService.getAllParishes());
+    @GetMapping // Endpoint Unificado
+    public ResponseEntity<Page<ParishResponse>> findAllParishes(
+            // Por defecto, ordenamos por 'name' ascendente.
+            @PageableDefault(size = 10, sort = "name", direction = Sort.Direction.ASC)
+            Pageable pageable
+    ) {
+        Page<ParishResponse> responsePage = parishService.findAllParishes(pageable);
+        return ResponseEntity.ok(responsePage);
     }
 
     // Obtener Parroquia por ID (Accesible para todos los roles internos)
