@@ -2,6 +2,8 @@ package com.sgp.sacrament.service;
 
 import com.sgp.sacrament.dto.SacramentRequest;
 import com.sgp.sacrament.dto.SacramentResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -17,8 +19,14 @@ public interface SacramentService {
      */
     List<SacramentResponse> getMySacraments(); // ⭐ NUEVO MÉTODO ⭐
 
-    /** Obtiene todos los sacramentos registrados. */
-    List<SacramentResponse> getAllSacraments();
+    // ⭐ MODIFICADO/UNIFICADO: Reemplaza getAllSacraments() y getSacramentsByPersonId() para gestión.
+    /**
+     * Obtiene una lista paginada de sacramentos, con filtro opcional por ID de persona.
+     * @param personId ID opcional de la Persona para filtrar.
+     * @param pageable Objeto de paginación y ordenamiento.
+     * @return Una Page de SacramentResponse.
+     */
+    Page<SacramentResponse> findAllSacraments(Long personId, Pageable pageable);
 
     /** Obtiene todos los sacramentos recibidos por una persona específica. */
     List<SacramentResponse> getSacramentsByPersonId(Long personId);
