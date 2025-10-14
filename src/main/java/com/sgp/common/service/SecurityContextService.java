@@ -1,5 +1,6 @@
 package com.sgp.common.service;
 
+import com.sgp.common.enums.RoleName;
 import com.sgp.common.exception.ResourceNotFoundException;
 import com.sgp.common.util.SecurityUtil;
 import com.sgp.person.model.Person;
@@ -42,5 +43,17 @@ public class SecurityContextService {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch(MANAGEMENT_ROLES::contains);
+    }
+
+    /**
+     * Verifica si el usuario logueado tiene un rol específico.
+     * @param roleName El nombre del rol a verificar.
+     * @return true si el usuario tiene el rol, false en caso contrario.
+     */
+    public boolean hasRole(RoleName roleName) {
+        String roleAuthority = roleName.name(); // Obtiene el string "ADMIN", "GESTOR", etc.
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(roleAuthority::equals);
     }
 }

@@ -1,4 +1,4 @@
-package com.sgp.user.dto;
+package com.sgp.auth.dto;
 
 import lombok.Builder;
 import lombok.Data;

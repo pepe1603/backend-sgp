@@ -1,8 +1,8 @@
-package com.sgp.user.service;
+package com.sgp.auth.service;
 
 import com.sgp.user.model.User;
 import com.sgp.user.repository.UserRepository;
-import com.sgp.user.repository.VerificationTokenRepository;
+import com.sgp.auth.repository.VerificationTokenRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
