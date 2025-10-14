@@ -5,6 +5,10 @@ import com.sgp.person.dto.PersonResponse;
 import com.sgp.person.service.PersonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,11 +31,26 @@ public class PersonController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    // Listar todas las Personas: ADMIN, GESTOR, COORDINATOR
+    // ⭐ MODIFICADO/UNIFICADO: OBTENER TODAS LAS PERSONAS (Paginada y Opcionalmente Filtrada por Parroquia) ⭐
+    /**
+     * GET /api/v1/people?page=0&size=20&sort=lastName,asc&parishId=1
+     * Obtiene una lista paginada de personas.
+     *
+     * @param pageable Parámetros de paginación (page, size) y ordenamiento (sort).
+     * @param parishId Filtro opcional por el ID de la Parroquia.
+     * @return Una respuesta Page con la lista de DTOs de personas.
+     */
     @PreAuthorize("hasAnyAuthority('ADMIN', 'GESTOR', 'COORDINATOR')")
-    @GetMapping
-    public ResponseEntity<List<PersonResponse>> getAllPeople() {
-        return ResponseEntity.ok(personService.getAllPeople());
+    @GetMapping // Endpoint Unificado
+    public ResponseEntity<Page<PersonResponse>> findAllPeople(
+            // Por defecto, ordenamos por apellido (lastName) en orden ascendente (alfabético).
+            @PageableDefault(size = 20, sort = "lastName", direction = Sort.Direction.ASC)
+            Pageable pageable,
+            // El ID de la parroquia es un filtro opcional
+            @RequestParam(required = false) Long parishId
+    ) {
+        Page<PersonResponse> responsePage = personService.findAllPeople(parishId, pageable);
+        return ResponseEntity.ok(responsePage);
     }
 
     // Obtener Persona por ID: ADMIN, GESTOR, COORDINATOR
@@ -40,14 +59,6 @@ public class PersonController {
     public ResponseEntity<PersonResponse> getPersonById(@PathVariable Long id) {
         return ResponseEntity.ok(personService.getPersonById(id));
     }
-
-    // Obtener Personas por Parroquia: ADMIN, GESTOR, COORDINATOR
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'GESTOR', 'COORDINATOR')")
-    @GetMapping("/parish/{parishId}")
-    public ResponseEntity<List<PersonResponse>> getPeopleByParishId(@PathVariable Long parishId) {
-        return ResponseEntity.ok(personService.getPeopleByParishId(parishId));
-    }
-
 
     // Actualizar Persona: Solo ADMIN o GESTOR
     @PreAuthorize("hasAnyAuthority('ADMIN', 'GESTOR')")
