@@ -1,7 +1,6 @@
 
 package com.sgp.user.service;
 
-import com.sgp.user.dto.ProfileResponse;
 import com.sgp.user.dto.UserCreationRequest;
 import com.sgp.user.dto.UserManagementResponse;
 import com.sgp.user.dto.UserUpdateRequest;

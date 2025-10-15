@@ -438,6 +438,22 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
+    // 26: Conflicto de Validación de Recurso (ResourceValidException) -> HTTP 409 ⭐
+    @ExceptionHandler(ResourceValidException.class)
+    public ResponseEntity<ErrorResponse> handleResourceValidException(
+            ResourceValidException ex, HttpServletRequest request) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Resource Validation Conflict")
+                .message(ex.getMessage()) // El mensaje claro y descriptivo que definiste (ej: La lista de roles no puede estar vacía si se envía.)
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
 
 
     // 2x. Manejo genérico (Fallback) -> HTTP 500

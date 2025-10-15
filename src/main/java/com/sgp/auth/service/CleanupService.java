@@ -20,7 +20,7 @@ public class CleanupService {
 
     private final UserRepository userRepository;
     private final VerificationTokenRepository tokenRepository;
-    private  final AuthService authService;
+    private  final AuthSe authSe;
 
     /**
      * Tarea programada que se ejecuta cada 24 horas (media noche) para
@@ -84,7 +84,7 @@ public class CleanupService {
             try {
                 // Reutilizamos el método de reenvío que genera un nuevo token y lo envía.
                 // Aunque se llama "resend", actúa como un recordatorio aquí.
-                authService.resendVerificationCode(user.getEmail());
+                authSe.resendVerificationCode(user.getEmail());
                 log.info("Recordatorio de verificación enviado a: {}", user.getEmail());
             } catch (Exception e) {
                 log.error("Fallo al enviar recordatorio a {}: {}", user.getEmail(), e.getMessage());

@@ -13,8 +13,10 @@ import org.springframework.stereotype.Service;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class JwtService {
@@ -58,12 +60,24 @@ public class JwtService {
             UserDetails userDetails
     ) {
         // Incluimos el rol en los claims extra
-        extraClaims.put("role", userDetails.getAuthorities().iterator().next().getAuthority());
+        // 👉 Convertir authorities a una lista de strings
+        List<String> roles = userDetails.getAuthorities()
+                .stream()
+                .map(authority -> authority.getAuthority())
+                .collect(Collectors.toList());
+
+        extraClaims.put("roles", roles); // Nota: cambiamos "role" a "roles" y es una lista
+
+        // 🔎 También incluimos el ID del usuario si es de tipo User (nuestra entidad)
+        if (userDetails instanceof com.sgp.user.model.User user) {
+            extraClaims.put("userId", user.getId()); // Usa el getter de tu entidad
+            extraClaims.put("forced_change", user.isForcePasswordChange());
+        }
 
         return Jwts
                 .builder()
                 .setClaims(extraClaims)
-                .setSubject(userDetails.getUsername())
+                .setSubject(userDetails.getUsername())  //-- esto ees el Email
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration)) // Expira en 24h
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
@@ -91,4 +105,17 @@ public class JwtService {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+
+    // -*-- MEtodos de ayuda ---
+
+    public List<String> extractRoles(String token) {
+        Claims claims = extractAllClaims(token);
+        return claims.get("roles", List.class);
+    }
+
+    public Long extractUserId(String token) {
+        Claims claims = extractAllClaims(token);
+        return claims.get("userId", Long.class);
+    }
+
 }

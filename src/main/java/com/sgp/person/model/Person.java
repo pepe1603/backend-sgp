@@ -31,27 +31,30 @@ public class Person extends Auditable {
     @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    @Column(name = "birth_date", nullable = false)
+    @Column(name = "birth_date")
     private LocalDate birthDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", nullable = false, length = 10)
+    @Column(name = "gender", length = 10)
     private Gender gender; // Usaremos un enum Gender
 
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
+    @Column(length = 100)
+    private String address;
+
     // --- Identificación Única (CRUCIAL) ---
-    @Column(name = "identification_type", nullable = false, length = 50)
+    @Column(name = "identification_type", length = 50)
     private String identificationType; // Ej: DNI, Cédula, Pasaporte
 
-    @Column(name = "identification_number", nullable = false, length = 50)
+    @Column(name = "identification_number",  length = 50)
     private String identificationNumber;
 
     // --- Relación con la Parroquia (La Cesta) ---
     // Clave Foránea: Muchas personas pertenecen a UNA parroquia
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parish_id", nullable = false)
+    @JoinColumn(name = "parish_id")
     private Parish parish;
 
     // --- Relación Opcional con Usuario de Sistema ---

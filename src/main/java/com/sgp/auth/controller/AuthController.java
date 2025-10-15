@@ -1,12 +1,12 @@
 package com.sgp.auth.controller;
 
+import com.sgp.auth.service.AuthService;
 import com.sgp.security.config.jwt.JwtService;
-import com.sgp.auth.dto.AuthResponse;
+import com.sgp.auth.dto.LoginResponse;
 import com.sgp.auth.dto.LoginRequest;
 import com.sgp.auth.dto.RegisterRequest;
 import com.sgp.auth.dto.RegisterResponse;
 import com.sgp.user.model.User;
-import com.sgp.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -35,17 +35,8 @@ public class AuthController {
      */
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
-        // 1. Delega al AuthService. La generación de JWT ya no es inmediata.
-        User newUser = authService.registerAndSendVerification(request);
-
-        // 2. Devuelve un mensaje de éxito, indicando que se envió un email.
-        // Devolver el nuevo DTO de registro
-        RegisterResponse response = RegisterResponse.builder()
-                .email(request.getEmail())
-                .message("Registro exitoso. Se ha enviado un código de verificación a su email para habilitar la cuenta.")
-                .requiresVerification(true)
-                .build();
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        RegisterResponse reponse = authService.registerAndSendVerification(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(reponse);
     }
 
     // ⭐ NUEVO ENDPOINT PARA VERIFICACIÓN ⭐
@@ -61,11 +52,10 @@ public class AuthController {
      * Ruta: POST /api/v1/auth/login
      */
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         // 1. Delega toda la lógica de autenticación, generación de JWT,
         // y registro de intentos fallidos al AuthService.
-        AuthResponse response = authService.login(request);
+        LoginResponse response = authService.login(request);
 
         // 2. Devuelve la respuesta (Si falla, AuthService lanza excepción
         // que es capturada por GlobalExceptionHandler)

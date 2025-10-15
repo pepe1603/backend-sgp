@@ -16,16 +16,12 @@ import java.util.stream.Collectors;
 public interface UserMapper {
 
     // --- Mapeo para el Listado de Administración ---
-    @Mapping(target = "firstName", source = "profile.firstName")
-    @Mapping(target = "lastName", source = "profile.lastName")
-    // MapStruct es lo suficientemente inteligente para mapear Set<Role> a Set<RoleName>
-    // usando un @Named, pero simplificaremos el calificador si ya tenemos la lógica directa:
-    // ⚠️ ELIMINAR EL qualifiedByName si usamos la conversión directa en el default method ⚠️
 
     // Mapeo de Auditoría explícito:
     @Mapping(target = "isActive", source = "active") // 👈 CORRECCIÓN: 'active' en la entidad es 'isActive' en DTO
     @Mapping(target = "updatedAt", source = "updatedAt")
     @Mapping(target = "updatedBy", source = "updatedBy")
+    @Mapping(target = "forcePasswordChange", source = "forcePasswordChange")
     UserManagementResponse toManagementResponse(User user);
 
 
@@ -37,7 +33,6 @@ public interface UserMapper {
     @Mapping(target = "password", ignore = true)
     @Mapping(target = "email", ignore = true)
     @Mapping(target = "roles", ignore = true)
-    @Mapping(target = "profile", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
