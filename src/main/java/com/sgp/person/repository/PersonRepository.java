@@ -1,6 +1,7 @@
 package com.sgp.person.repository;
 
 import com.sgp.person.model.Person;
+import com.sgp.user.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -46,4 +47,7 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
      * Busca una Persona por el ID del Usuario asociado.
      */
     Optional<Person> findByUser_Id(Long userId); // ⭐ NUEVO MÉTODO DE BÚSQUEDA ⭐
+
+    // ⭐ MÉTODO CRÍTICO para obtener la persona del usuario logueado ⭐
+    Optional<Person> findByUser(User user);
 }

@@ -14,5 +14,5 @@ public class ProfileResponse {
     private String lastName;
     private Set<String> roles;
     private String address;
-    private String phone;
+    private String phoneNumber;
 }

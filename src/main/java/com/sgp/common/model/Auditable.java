@@ -5,6 +5,7 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Where;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -14,6 +15,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Getter // Usamos @Getter ya que los campos son gestionados por JPA
+@Where(clause = "is_active = true") // 👈 AÑADIR: Solo consulta registros activos por defecto
 @MappedSuperclass // No mapear como entidad, solo heredar campos
 @EntityListeners(AuditingEntityListener.class) // Habilita la escucha de eventos de JPA para actualizar las fechas
 public abstract class Auditable {
@@ -34,7 +36,7 @@ public abstract class Auditable {
      * Nota: Para que @CreatedBy y @LastModifiedBy funcionen, debes tener una configuración de auditoría en Spring Boot (usando AuditorAware) que le diga a JPA cómo obtener el nombre (o ID) del usuario logueado actualmente.
      * */
 
-    // Campo de estado (Activo/Inactivo) o eliminación lógica,
+    // Campo de estado (Activo/Inactivo) o eliminación lógica, // ⭐ CAMPO DE BORRADO LÓGICO ⭐
     @Setter
     @Column(name = "is_active", nullable = false, columnDefinition = "boolean default true" )
     private boolean isActive = true;

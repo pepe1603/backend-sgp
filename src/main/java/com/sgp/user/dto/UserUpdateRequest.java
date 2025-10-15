@@ -5,10 +5,12 @@ import com.sgp.common.enums.RoleName;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * DTO utilizado por el ADMIN para modificar el estado y roles de otro usuario.
+ * Nota: Los campos se envuelven en Optional para soportar actualizaciones parciales (PATCH).
  */
 @Data
 public class UserUpdateRequest {
@@ -20,18 +22,21 @@ public class UserUpdateRequest {
     // Forzamos a Jackson a usar "isEnabled" para coincidir con tu convención
     // Estado de habilitación (Activar/Desactivar)
     @JsonProperty("isEnabled")
-    private boolean isEnabled;
+    private Optional<Boolean> isEnabled = Optional.empty();
 
     // 2. Estado de actividad (Borrado lógico)
     // Forzamos a Jackson a usar "isActive"
     // Estado de actividad (Borrado lógico)
     @JsonProperty("isActive")
-    private boolean isActive;
+    private Optional<Boolean> isActive = Optional.empty();
 
     // 3. Roles
-    // Roles: debe haber al menos un rol.
-    @NotEmpty(message = "El usuario debe tener al menos un rol asignado.")
-    private Set<RoleName> roles;
+    // Aunque sigue siendo una lista, la convertimos en Optional.
+    // La validación @NotEmpty se debe eliminar porque es opcional.
+    // Si se envía, *debe* contener roles, pero si no se envía, se omite.
+    // @NotEmpty(message = "El usuario debe tener al menos un rol asignado.") // 👈 ELIMINAR O MANEJAR DENTRO DEL SERVICE
+    private Optional<Set<RoleName>> roles = Optional.empty(); // 👈 CAMBIAR a Optional
 
-    //añaidr mas campso recoemndaddos
+
+    //añaidr mas campso recoemndaddos, por ahroas solo esstos.
 }

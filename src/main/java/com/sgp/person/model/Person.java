@@ -41,6 +41,9 @@ public class Person extends Auditable {
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
+    @Column(length = 20)
+    private String address;
+
     // --- Identificación Única (CRUCIAL) ---
     @Column(name = "identification_type", nullable = false, length = 50)
     private String identificationType; // Ej: DNI, Cédula, Pasaporte

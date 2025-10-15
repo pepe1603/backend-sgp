@@ -10,7 +10,6 @@ import com.sgp.security.service.LoginAttemptService;
 import com.sgp.auth.dto.AuthResponse;
 import com.sgp.auth.dto.LoginRequest;
 import com.sgp.auth.dto.RegisterRequest;
-import com.sgp.user.model.Profile;
 import com.sgp.user.model.Role;
 import com.sgp.user.model.User;
 import com.sgp.auth.model.VerificationToken;
