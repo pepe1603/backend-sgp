@@ -43,9 +43,9 @@ public class User extends Auditable implements UserDetails {
     )
     private Set<Role> roles = new HashSet<>();
 
-    // Relación OneToOne con Profile (Mapeada en la clase Profile)
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Profile profile;
+//    // Relación OneToOne con Profile (Mapeada en la clase Profile) ELIMINADA
+//    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private Profile profile;
 
     // ====================================================================
     // ⭐ IMPLEMENTACIÓN DE MÉTODOS DE USERDETAILS ⭐

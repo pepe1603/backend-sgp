@@ -11,7 +11,7 @@ import java.util.Set;
 public class UserManagementResponse {
     private Long id;
     private String email;
-    private boolean isActive;
+    private boolean isActive; //permitirá al administrador ver si un usuario ha sido desactivado lógicamente.
     private boolean isEnabled;
     private Set<RoleName> roles;
     private String firstName;
