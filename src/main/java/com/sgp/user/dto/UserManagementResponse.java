@@ -20,4 +20,6 @@ public class UserManagementResponse {
     private String createdBy; // ✅ Ya existe
     private LocalDateTime updatedAt; // 👈 NUEVO: Auditoría de actualización
     private String updatedBy; // 👈 NUEVO: Auditoría de actualización
+    private boolean forcePasswordChange;
+
 }

@@ -32,5 +32,8 @@ public class UserCreationRequest {
     @NotEmpty(message = "El usuario debe tener al menos un rol asignado.")
     private Set<RoleName> roles;
 
+    private Boolean forcePasswordChange;
+
+
     // Opcional: Podrías añadir campos del Profile si el ADMIN necesita llenarlos (ej. phone, address)
 }

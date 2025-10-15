@@ -61,6 +61,11 @@ public class UserAdminServiceImpl implements UserAdminService {
         user.setRoles(roles);
         user.setEnabled(true); // Cuentas de personal se habilitan inmediatamente
         user.setActive(true);  // Y están activas
+        user.setForcePasswordChange( // ADMIN ELige si Qeuire cambio de contraseña Obligatorio
+                request.getForcePasswordChange() != null ? request.getForcePasswordChange() : true
+        );
+
+
 
         // 4. Crear Entidad Person (Remplazo de  Profile)
         Person person = new Person();
@@ -176,6 +181,14 @@ public class UserAdminServiceImpl implements UserAdminService {
         // *Se mantienen los ifPresent para la actualización parcial (PATCH).*
         request.getIsEnabled().ifPresent(user::setEnabled);
         request.getIsActive().ifPresent(user::setActive);
+        request.getForcePasswordChange().ifPresent(newValue -> {
+            if (!securityContextService.hasRole(RoleName.ADMIN)) {
+                throw new ResourceNotAuthorizedException("Solo un administrador puede cambiar la política de cambio de contraseña.");
+            }
+            user.setForcePasswordChange(newValue);
+        });
+
+
 
         // Si tu `UserUpdateRequest` tuviera otros campos simples (ej: firstName, lastName)
         // que **NO** son Optionals, podrías usar el mapper para esos, pero para Optionals

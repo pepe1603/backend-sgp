@@ -7,7 +7,7 @@ import java.util.Set;
 
 @Data // Lombok
 @Builder // Lombok para crear objetos de respuesta fácilmente
-public class AuthResponse {
+public class LoginResponse { //podemos renombrarla apra mas claridad a LoginResponse?
 
     private String token;
     private String email;

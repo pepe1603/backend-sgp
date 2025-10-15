@@ -4,6 +4,7 @@ package com.sgp.user.model;
 import com.sgp.common.model.Auditable;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class User extends Auditable implements UserDetails {
 
     @Id
@@ -33,6 +35,10 @@ public class User extends Auditable implements UserDetails {
     private String password;
 
     private boolean isEnabled = false;
+
+    @Column(name = "force_password_change")
+    private boolean forcePasswordChange = false;
+
 
     // Relación ManyToMany con Role
     @ManyToMany(fetch = FetchType.EAGER)

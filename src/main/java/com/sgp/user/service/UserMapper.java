@@ -21,6 +21,7 @@ public interface UserMapper {
     @Mapping(target = "isActive", source = "active") // 👈 CORRECCIÓN: 'active' en la entidad es 'isActive' en DTO
     @Mapping(target = "updatedAt", source = "updatedAt")
     @Mapping(target = "updatedBy", source = "updatedBy")
+    @Mapping(target = "forcePasswordChange", source = "forcePasswordChange")
     UserManagementResponse toManagementResponse(User user);
 
 

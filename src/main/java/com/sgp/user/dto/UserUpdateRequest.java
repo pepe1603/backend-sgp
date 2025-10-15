@@ -37,6 +37,9 @@ public class UserUpdateRequest {
     // @NotEmpty(message = "El usuario debe tener al menos un rol asignado.") // 👈 ELIMINAR O MANEJAR DENTRO DEL SERVICE
     private Optional<Set<RoleName>> roles = Optional.empty(); // 👈 CAMBIAR a Optional
 
+    private Optional<Boolean> forcePasswordChange = Optional.empty();
+
+
 
     //añaidr mas campso recoemndaddos, por ahroas solo esstos.
 }
