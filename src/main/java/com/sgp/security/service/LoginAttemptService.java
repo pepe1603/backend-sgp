@@ -2,6 +2,7 @@ package com.sgp.security.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
@@ -19,13 +20,17 @@ public class LoginAttemptService {
 
     private final RedisTemplate<String, Integer> redisTemplate;
 
+    private String buildKey(String email) {
+        return KEY_PREFIX + email;
+    }
+
     // --- Métodos de Control ---
 
     /**
      * Incrementa el contador de fallos para un email.
      */
     public void recordFailedAttempt(String email) {
-        String key = KEY_PREFIX + email;
+        String key = buildKey(email);
 
         // 1. Incrementar el contador (o inicializarlo a 1)
         Integer attempts = redisTemplate.opsForValue().increment(key, 1).intValue();
@@ -70,4 +75,21 @@ public class LoginAttemptService {
 
         return attempts != null && attempts >= MAX_ATTEMPTS;
     }
+
+    public long getRemainingBlockTime(String email) {
+        String key = buildKey(email);
+        Long expire = redisTemplate.getExpire(key, TimeUnit.SECONDS);
+        return expire != null ? expire : 0;
+    }
+
+    //metodo altenrativop :
+    public void checkBlockedOrThrow(String email) {
+        if (isBlocked(email)) {
+            long seconds = getRemainingBlockTime(email);
+            throw new LockedException("Demasiados intentos fallidos. Intenta en " + seconds + " segundos.");
+        }
+    }
+
+
+
 }

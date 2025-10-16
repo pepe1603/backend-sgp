@@ -13,6 +13,7 @@ import com.sgp.security.service.LoginAttemptService;
 import com.sgp.auth.dto.LoginResponse;
 import com.sgp.auth.dto.LoginRequest;
 import com.sgp.auth.dto.RegisterRequest;
+import com.sgp.security.service.OtpAttemptService;
 import com.sgp.user.model.Role;
 import com.sgp.user.model.User;
 import com.sgp.auth.model.VerificationToken;
@@ -54,6 +55,7 @@ public class AuthServiceImpl implements AuthService {
     private final LoginAttemptService loginAttemptService; // ⬅️ Necesitas inyectar esto
     private final PersonRepository personRepository;
     private final EntityManager entityManager;
+    private final OtpAttemptService otpAttemptService;
 
     /**
      * Lógica de registro con verificación por email.
@@ -110,7 +112,9 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void verifyAccount(String code) {
         VerificationToken token = verificationTokenRepository.findByToken(code)
-                .orElseThrow(() -> new VerificationCodeInvalidException("Código de verificación inválido o inexistente."));
+                .orElseThrow(() -> new VerificationCodeInvalidException("No se encontró un código válido. Solicita uno nuevo o revisa tu bandeja de entrada."));
+
+        otpAttemptService.checkBlockedOrThrow(token.getUser().getEmail(), otpAttemptService.CONTEXT_VERIFY);
 
         // 1. Comprobar Expiración
         if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
