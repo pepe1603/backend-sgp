@@ -83,6 +83,11 @@ public class SacramentServiceImpl implements SacramentService {
         Person godfather1 = findPersonById(request.getGodfather1Id(), "Padrino 1");
         Person godfather2 = findPersonById(request.getGodfather2Id(), "Padrino 2");
 
+        // ⭐ BUSCAR ENTIDADES DE MATRIMONIO/TESTIGOS ⭐
+        Person spouse = findPersonById(request.getSpouseId(), "Cónyuge"); // Suponiendo request.getSpouseId() existe
+        Person witness1 = findPersonById(request.getWitness1Id(), "Testigo 1"); // Suponiendo request.getWitness1Id() existe
+        Person witness2 = findPersonById(request.getWitness2Id(), "Testigo 2"); // Suponiendo request.getWitness2Id() existe
+
         // 3. Mapear y asignar
         Sacrament sacrament = sacramentMapper.toSacramentEntity(request);
         sacrament.setPerson(recipient);
@@ -102,6 +107,11 @@ public class SacramentServiceImpl implements SacramentService {
         detail.setOriginDioceseName(request.getOriginDioceseName());
         detail.setFatherNameText(request.getFatherNameText());
         detail.setMotherNameText(request.getMotherNameText());
+
+        // ⭐ ASIGNAR ENTIDADES DE MATRIMONIO/TESTIGOS ⭐
+        detail.setSpouse(spouse);
+        detail.setWitness1(witness1);
+        detail.setWitness2(witness2);
 
         SacramentDetail savedDetail = sacramentDetailRepository.save(detail);
         savedSacrament.setSacramentDetail(savedDetail); // Enlazar el detalle de vuelta al sacramento
@@ -180,6 +190,11 @@ public class SacramentServiceImpl implements SacramentService {
         Person godfather1 = findPersonById(request.getGodfather1Id(), "Padrino 1");
         Person godfather2 = findPersonById(request.getGodfather2Id(), "Padrino 2");
 
+        // ⭐ BUSCAR ENTIDADES DE MATRIMONIO/TESTIGOS ⭐
+        Person spouse = findPersonById(request.getSpouseId(), "Cónyuge");
+        Person witness1 = findPersonById(request.getWitness1Id(), "Testigo 1");
+        Person witness2 = findPersonById(request.getWitness2Id(), "Testigo 2");
+
         // 3. Actualizar Sacrament (Usando el mapper para los campos básicos, si es posible)
         // Ya que MapStruct no soporta el mapeo de Request a Entity sobre un existente fácilmente con IDs
         // haremos la actualización manual de los campos.
@@ -206,6 +221,11 @@ public class SacramentServiceImpl implements SacramentService {
         existingDetail.setOriginDioceseName(request.getOriginDioceseName());
         existingDetail.setFatherNameText(request.getFatherNameText());
         existingDetail.setMotherNameText(request.getMotherNameText());
+
+        // ⭐ ACTUALIZAR ENTIDADES DE MATRIMONIO/TESTIGOS ⭐
+        existingDetail.setSpouse(spouse);
+        existingDetail.setWitness1(witness1);
+        existingDetail.setWitness2(witness2);
 
         // Guardar ambos (Detail se guardará por la cascada si es @OneToOne(cascade=ALL) en Sacrament,
         // pero lo haremos explícitamente si lo creamos)

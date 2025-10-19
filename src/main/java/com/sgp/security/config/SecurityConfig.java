@@ -81,8 +81,9 @@ public class SecurityConfig {
         return username -> {
             // ⭐ 1. COMPROBAR BLOQUEO EN REDIS PRIMERO ⭐
             if (loginAttemptService.isBlocked(username)) {
+                long remaining = loginAttemptService.getRemainingBlockTime(username);
                 // Lanza LockedException si Redis indica que está bloqueada
-                throw new LockedException("La cuenta ha sido bloqueada debido a demasiados intentos fallidos. Intente mas tarde .");
+                throw new LockedException("La cuenta ha sido bloqueada debido a demasiados intentos fallidos. Intente nuevamente en "+ remaining +"segundos.");
             }
 
             // 2. Cargar User (que implementa UserDetails) desde la DB
