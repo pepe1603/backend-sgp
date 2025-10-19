@@ -49,4 +49,11 @@ public class SacramentRequest {
     private String fatherNameText; // Nombre del padre (si no es una Person registrada)
 
     private String motherNameText; // Nombre de la madre (si no es una Person registrada)
+
+    // ⭐ CAMPOS NUEVOS DE MATRIMONIO/TESTIGOS ⭐
+    private Long spouseId; // ID del Contrayente 2
+
+    private Long witness1Id; // ID del Testigo 1
+
+    private Long witness2Id; // ID del Testigo 2
 }
