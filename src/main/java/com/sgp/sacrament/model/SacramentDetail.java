@@ -59,4 +59,21 @@ public class SacramentDetail extends Auditable {
 
     @Column(name = "mother_name_text")
     private String motherNameText;
+
+    // *** CAMPOS EXCLUSIVOS PARA MATRIMONIO (opcionales) ***
+
+    // Contrayente 2 (La otra persona en el matrimonio)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "spouse_id") // Nueva FK para el cónyuge
+    private Person spouse;
+
+    // Testigo 1
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "witness_1_id") // Nueva FK
+    private Person witness1;
+
+    // Testigo 2
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "witness_2_id") // Nueva FK
+    private Person witness2;
 }

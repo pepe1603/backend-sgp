@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -52,5 +53,10 @@ public interface UserMapper {
         return roles.stream()
                 .map(role -> role.getName()) // Retorna el RoleName (el enum)
                 .collect(Collectors.toSet());
+    }
+
+    // Método para convertir Optional<Boolean> a boolean
+    default boolean map(Optional<Boolean> optional) {
+        return optional.orElse(false);
     }
 }

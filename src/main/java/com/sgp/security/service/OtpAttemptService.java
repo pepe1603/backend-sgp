@@ -17,7 +17,7 @@ public class OtpAttemptService {
     public static final String CONTEXT_VERIFY = "verify";
     public static final String CONTEXT_RESET = "reset";
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, Integer> redisTemplate;
 
     private String buildKey(String email, String context) {
         return "otp:" + context + ":" + email;
