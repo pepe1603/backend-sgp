@@ -19,9 +19,9 @@ import java.util.stream.Collectors;
 @Entity
 @Table(name = "users")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class User extends Auditable implements UserDetails {
 
     @Id

@@ -5,9 +5,7 @@ import com.sgp.parish.model.Parish;
 import com.sgp.person.model.Person;
 import com.sgp.sacrament.enums.SacramentType;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 
@@ -15,6 +13,8 @@ import java.time.LocalDate;
 @Table(name = "sacraments")
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class Sacrament extends Auditable {
 

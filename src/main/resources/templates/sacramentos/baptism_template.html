@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title th:text="'Acta de ' + ${acta.tipoSacramento}">[Tipo de Sacramento]</title>
+
+    <style>
+        /* === FUENTES PERSONALIZADAS === */
+        @font-face {
+            font-family: 'Lora';
+            /* ⚠️ Ruta relativa al baseUrl (/templates/) */
+            src: url('../fonts/Lora-Regular.ttf') format('truetype');
+            font-weight: normal;
+        }
+
+        @font-face {
+            font-family: 'Playfair Display';
+            src: url('../fonts/PlayfairDisplay-Regular.ttf') format('truetype');
+            font-weight: normal;
+        }
+
+        /* === ESTILOS GENERALES === */
+        body {
+            font-family: 'Lora', serif;
+            font-size: 12pt;
+            margin: 50px 70px;
+            color: #222;
+            background-color: #fff;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #666;
+            padding-bottom: 15px;
+        }
+
+        .header img {
+            width: 120px;
+            height: auto;
+            margin-bottom: 15px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 26pt;
+            margin: 0;
+            letter-spacing: 2px;
+            color: #333;
+            text-transform: uppercase;
+        }
+
+        .header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 18pt;
+            margin: 5px 0 0 0;
+            color: #555;
+            text-transform: uppercase;
+        }
+
+        .header h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 16pt;
+            margin: 20px 0 0 0;
+            text-transform: uppercase;
+            color: #777;
+            letter-spacing: 1.5px;
+        }
+
+        .content {
+            line-height: 1.8;
+            text-align: justify;
+            margin-top: 20px;
+            font-family: 'Lora', serif;
+            font-size: 12pt;
+            color: #444;
+        }
+
+        .content p {
+            margin: 15px 0;
+        }
+
+        .data {
+            font-weight: 700;
+            text-transform: uppercase;
+            border-bottom: 1px dotted #999;
+            padding: 0 5px;
+            color: #000;
+        }
+
+        .signatures {
+            margin-top: 80px;
+            overflow: hidden;
+            font-family: 'Lora', serif;
+            font-size: 11pt;
+            color: #333;
+        }
+
+        .signature-box {
+            width: 45%;
+            float: left;
+            text-align: center;
+            border-top: 1px solid black;
+            padding-top: 10px;
+            margin-bottom: 20px;
+            min-height: 60px;
+        }
+
+        .right-box {
+            float: right;
+        }
+
+        /* Limpia los floats */
+        .signatures::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <img src="https://images.icon-icons.com/2622/PNG/512/religion_church_icon_157486.png" alt="Logo Parroquia" />
+
+
+    <h1 th:text="'DIÓCESIS DE ' + ${acta.ciudadParroquiaCelebracion}">[Ciudad de la Diócesis]</h1>
+    <h2 th:text="'PARROQUIA DE ' + ${acta.nombreParroquiaCelebracion}">[Nombre Parroquia]</h2>
+    <h3 th:text="'CERTIFICADO DE ' + ${acta.tipoSacramento}">CERTIFICADO DE BAUTISMO</h3>
+</div>
+
+<div class="content">
+    <p>
+        Certifico que en el Libro de Bautismos de esta Parroquia, al
+        <strong>Asiento:</strong> <span class="data" th:text="${acta.asiento}">[Número de Asiento]</span>,
+        <strong>Folio:</strong> <span class="data" th:text="${acta.folio}">[Número de Folio]</span>,
+        <strong>Libro:</strong> <span class="data" th:text="${acta.libro}">[Número de Libro]</span>,
+        se encuentra la partida de bautismo del niño/a
+        <span class="data" th:text="${acta.nombreCompletoFeligres}">[Nombre Completo del Feligres]</span>,
+        nacido/a el día
+        <span class="data"
+              th:text="${#temporals.day(acta.fechaNacimientoFeligres)} + ' de ' + ${#temporals.monthName(acta.fechaNacimientoFeligres)} + ' de ' + ${#temporals.year(acta.fechaNacimientoFeligres)}">
+              [Fecha de Nacimiento]</span>.
+    </p>
+
+    <p>
+        Hijo/a legítimo/a de <span class="data" th:text="${acta.padreNombreText}">[Nombre del Padre]</span>
+        y de <span class="data" th:text="${acta.madreNombreText}">[Nombre de la Madre]</span>.
+    </p>
+
+    <p>
+        Fue bautizado/a el día
+        <span class="data"
+              th:text="${#temporals.day(acta.fechaCelebracion)} + ' de ' + ${#temporals.monthName(acta.fechaCelebracion)} + ' de ' + ${#temporals.year(acta.fechaCelebracion)}">
+              [Fecha de Bautizo]</span>,
+        por el <span class="data" th:text="${acta.ministroOficianteNombre}">[Nombre del Ministro Oficiante]</span>.
+    </p>
+
+    <p>
+        Fueron sus Padrinos:
+        <span class="data"
+              th:text="${acta.padrino1Nombre} + (${acta.padrino2Nombre != '-' ? ' y ' + acta.padrino2Nombre : ''})">
+              [Nombres de los Padrinos]</span>.
+    </p>
+
+    <p th:if="${acta.notas != null and acta.notas.length() > 0}">
+        <strong>Notas:</strong> <span th:text="${acta.notas}">[Notas Adicionales]</span>
+    </p>
+</div>
+
+<div class="signatures">
+    <div class="signature-box">
+        <p>Firma y Sello del Párroco</p>
+    </div>
+    <div class="signature-box right-box">
+        <p th:text="'Dado en ' + ${acta.ciudadParroquiaCelebracion} + ', a ' +
+                ${#temporals.day(acta.fechaEmisionCertificado)} + ' de ' + ${#temporals.monthName(acta.fechaEmisionCertificado)} + ' de ' + ${#temporals.year(acta.fechaEmisionCertificado)}">
+            [Lugar y Fecha de Expedición]
+        </p>
+        <p>Fecha de Expedición</p>
+    </div>
+</div>
+
+</body>
+</html>
