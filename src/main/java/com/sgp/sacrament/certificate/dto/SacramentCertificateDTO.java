@@ -52,6 +52,9 @@ public class SacramentCertificateDTO {
     private String testigo1Nombre; // Testigo 1 o Padrino de Confirmación/Bautismo 1 (si no usa godfather1)
     private String testigo2Nombre; // Testigo 2 o Padrino de Confirmación/Bautismo 2 (si no usa godfather2)
 
+    private String spouseFatherNameText;
+    private String spouseMotherNameText;
+
     // Opcional: Para seguimiento o validez
     private LocalDate fechaEmisionCertificado = LocalDate.now();
 }

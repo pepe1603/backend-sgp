@@ -112,6 +112,8 @@ public class SacramentServiceImpl implements SacramentService {
         detail.setSpouse(spouse);
         detail.setWitness1(witness1);
         detail.setWitness2(witness2);
+        detail.setSpouseFatherNameText(request.getSpouseFatherNameText());
+        detail.setSpouseMotherNameText(request.getSpouseMotherNameText());
 
         SacramentDetail savedDetail = sacramentDetailRepository.save(detail);
         savedSacrament.setSacramentDetail(savedDetail); // Enlazar el detalle de vuelta al sacramento
@@ -195,6 +197,8 @@ public class SacramentServiceImpl implements SacramentService {
         Person witness1 = findPersonById(request.getWitness1Id(), "Testigo 1");
         Person witness2 = findPersonById(request.getWitness2Id(), "Testigo 2");
 
+
+
         // 3. Actualizar Sacrament (Usando el mapper para los campos básicos, si es posible)
         // Ya que MapStruct no soporta el mapeo de Request a Entity sobre un existente fácilmente con IDs
         // haremos la actualización manual de los campos.
@@ -222,11 +226,14 @@ public class SacramentServiceImpl implements SacramentService {
         existingDetail.setFatherNameText(request.getFatherNameText());
         existingDetail.setMotherNameText(request.getMotherNameText());
 
+
         // ⭐ ACTUALIZAR ENTIDADES DE MATRIMONIO/TESTIGOS ⭐
         existingDetail.setSpouse(spouse);
         existingDetail.setWitness1(witness1);
         existingDetail.setWitness2(witness2);
-
+        // ⭐ ASIGNAR NUEVOS CAMPOS ⭐
+        existingDetail.setSpouseFatherNameText(request.getSpouseFatherNameText());
+        existingDetail.setSpouseMotherNameText(request.getSpouseMotherNameText());
         // Guardar ambos (Detail se guardará por la cascada si es @OneToOne(cascade=ALL) en Sacrament,
         // pero lo haremos explícitamente si lo creamos)
         // Por ahora, confiamos en que Spring Data JPA gestione la persistencia del Detail

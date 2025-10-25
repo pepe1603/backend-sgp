@@ -1,25 +1,27 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
-    <title th:text="'Acta de ' + ${acta.tipoSacramento}">[Tipo de Sacramento]</title>
+    <title th:text="'Certificado de ' + ${acta.tipoSacramento.displayName}">Certificado de Bautismo</title>
 
     <style>
         /* === FUENTES PERSONALIZADAS === */
         @font-face {
             font-family: 'Lora';
-            /* ⚠️ Ruta relativa al baseUrl (/templates/) */
-            src: url('../fonts/Lora-Regular.ttf') format('truetype');
+            src: url('/fonts/Lora-Regular.ttf') format('truetype');
             font-weight: normal;
         }
-
         @font-face {
             font-family: 'Playfair Display';
-            src: url('../fonts/PlayfairDisplay-Regular.ttf') format('truetype');
+            src: url('/fonts/PlayfairDisplay-Regular.ttf') format('truetype');
             font-weight: normal;
         }
 
         /* === ESTILOS GENERALES === */
+        @page {
+            size: A4;
+            margin: 0;
+        }
         body {
             font-family: 'Lora', serif;
             font-size: 12pt;
@@ -91,9 +93,9 @@
             color: #000;
         }
 
+        /* Bloque de Firmas CORREGIDO para Flying Saucer (usa float) */
         .signatures {
             margin-top: 80px;
-            overflow: hidden;
             font-family: 'Lora', serif;
             font-size: 11pt;
             color: #333;
@@ -101,19 +103,17 @@
 
         .signature-box {
             width: 45%;
-            float: left;
             text-align: center;
             border-top: 1px solid black;
             padding-top: 10px;
             margin-bottom: 20px;
-            min-height: 60px;
+            float: left;
         }
 
-        .right-box {
+        .signatures .signature-box:last-child {
             float: right;
         }
 
-        /* Limpia los floats */
         .signatures::after {
             content: "";
             display: table;
@@ -123,14 +123,13 @@
 </head>
 
 <body>
-
 <div class="header">
-    <img src="https://images.icon-icons.com/2622/PNG/512/religion_church_icon_157486.png" alt="Logo Parroquia" />
+    <img th:src="'data:image/png;base64,' + ${logoBase64}" alt="Logo Parroquia"/>
 
 
     <h1 th:text="'DIÓCESIS DE ' + ${acta.ciudadParroquiaCelebracion}">[Ciudad de la Diócesis]</h1>
     <h2 th:text="'PARROQUIA DE ' + ${acta.nombreParroquiaCelebracion}">[Nombre Parroquia]</h2>
-    <h3 th:text="'CERTIFICADO DE ' + ${acta.tipoSacramento}">CERTIFICADO DE BAUTISMO</h3>
+    <h3 th:text="'CERTIFICADO DE ' + ${acta.tipoSacramento.displayName}">CERTIFICADO DE BAUTISMO</h3>
 </div>
 
 <div class="content">
@@ -144,7 +143,7 @@
         nacido/a el día
         <span class="data"
               th:text="${#temporals.day(acta.fechaNacimientoFeligres)} + ' de ' + ${#temporals.monthName(acta.fechaNacimientoFeligres)} + ' de ' + ${#temporals.year(acta.fechaNacimientoFeligres)}">
-              [Fecha de Nacimiento]</span>.
+                  [Fecha de Nacimiento]</span>.
     </p>
 
     <p>
@@ -156,15 +155,15 @@
         Fue bautizado/a el día
         <span class="data"
               th:text="${#temporals.day(acta.fechaCelebracion)} + ' de ' + ${#temporals.monthName(acta.fechaCelebracion)} + ' de ' + ${#temporals.year(acta.fechaCelebracion)}">
-              [Fecha de Bautizo]</span>,
+                  [Fecha de Bautizo]</span>,
         por el <span class="data" th:text="${acta.ministroOficianteNombre}">[Nombre del Ministro Oficiante]</span>.
     </p>
 
     <p>
         Fueron sus Padrinos:
         <span class="data"
-              th:text="${acta.padrino1Nombre} + (${acta.padrino2Nombre != '-' ? ' y ' + acta.padrino2Nombre : ''})">
-              [Nombres de los Padrinos]</span>.
+              th:text="${acta.padrino1Nombre} + (${acta.padrino2Nombre != null and acta.padrino2Nombre != '' and acta.padrino2Nombre != '-' ? ' y ' + acta.padrino2Nombre : ''})">
+                  [Nombres de los Padrinos]</span>.
     </p>
 
     <p th:if="${acta.notas != null and acta.notas.length() > 0}">
@@ -176,14 +175,14 @@
     <div class="signature-box">
         <p>Firma y Sello del Párroco</p>
     </div>
-    <div class="signature-box right-box">
+
+    <div class="signature-box">
         <p th:text="'Dado en ' + ${acta.ciudadParroquiaCelebracion} + ', a ' +
-                ${#temporals.day(acta.fechaEmisionCertificado)} + ' de ' + ${#temporals.monthName(acta.fechaEmisionCertificado)} + ' de ' + ${#temporals.year(acta.fechaEmisionCertificado)}">
+                    ${#temporals.day(acta.fechaEmisionCertificado)} + ' de ' + ${#temporals.monthName(acta.fechaEmisionCertificado)} + ' de ' + ${#temporals.year(acta.fechaEmisionCertificado)}">
             [Lugar y Fecha de Expedición]
         </p>
         <p>Fecha de Expedición</p>
     </div>
 </div>
-
 </body>
 </html>

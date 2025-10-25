@@ -90,11 +90,12 @@ public interface CertificateMapper {
 
                 // Datos exclusivos matrimonio/testigos
                 .contrayente2NombreCompleto(contrayente2)
-                .contrayente2PadreNombreText(getTextOrHyphen(null)) // Ajustar si se tienen datos reales
-                .contrayente2MadreNombreText(getTextOrHyphen(null)) // Ajustar si se tienen datos reales
+
                 .testigo1Nombre(testigo1)
                 .testigo2Nombre(testigo2)
-
+                // ⭐ Mapear los campos del cónyuge 2 que ya existen en la Entidad ⭐
+                .contrayente2PadreNombreText(getTextOrHyphen(detail.getSpouseFatherNameText()))
+                .contrayente2MadreNombreText(getTextOrHyphen(detail.getSpouseMotherNameText()))
                 .fechaEmisionCertificado(LocalDate.now())
                 .build();
     }

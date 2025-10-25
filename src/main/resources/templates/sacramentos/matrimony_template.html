@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
-    <title th:text="'Certificado de ' + ${acta.tipoSacramento.displayName}">Certificado de Confirmación</title>
+    <title th:text="'Certificado de ' + ${acta.tipoSacramento.displayName}">Certificado de Matrimonio</title>
 
     <style>
         /* === FUENTES PERSONALIZADAS === */
@@ -107,20 +107,19 @@
             border-top: 1px solid black;
             padding-top: 10px;
             margin-bottom: 20px;
-            float: left;
+            float: left; /* Usar float */
         }
 
         .signatures .signature-box:last-child {
-            float: right;
+            float: right; /* Empujar a la derecha */
         }
 
         .signatures::after {
             content: "";
             display: table;
-            clear: both;
+            clear: both; /* Limpiar float */
         }
     </style>
-
 </head>
 
 <body>
@@ -129,39 +128,41 @@
 
     <h1 th:text="'DIÓCESIS DE ' + ${acta.ciudadParroquiaCelebracion}">[Ciudad de la Diócesis]</h1>
     <h2 th:text="'PARROQUIA DE ' + ${acta.nombreParroquiaCelebracion}">[Nombre Parroquia]</h2>
-    <h3 th:text="'CERTIFICADO DE ' + ${acta.tipoSacramento.displayName}">CERTIFICADO DE CONFIRMACIÓN</h3>
+    <h3 th:text="'CERTIFICADO DE ' + ${acta.tipoSacramento.displayName}">CERTIFICADO DE MATRIMONIO</h3>
 </div>
 
 <div class="content">
     <p>
-        Certifico que en el Libro de Confirmaciones de esta Parroquia, al
+        Certifico que en el Libro de Matrimonios de esta Parroquia, al
         <strong>Asiento:</strong> <span class="data" th:text="${acta.asiento}">[Número de Asiento]</span>,
         <strong>Folio:</strong> <span class="data" th:text="${acta.folio}">[Número de Folio]</span>,
         <strong>Libro:</strong> <span class="data" th:text="${acta.libro}">[Número de Libro]</span>,
-        se encuentra la partida de confirmación de
-        <span class="data" th:text="${acta.nombreCompletoFeligres}">[Nombre Completo del Feligres]</span>,
-        nacido/a el día
-        <span class="data"
-              th:text="${#temporals.day(acta.fechaNacimientoFeligres)} + ' de ' + ${#temporals.monthName(acta.fechaNacimientoFeligres)} + ' de ' + ${#temporals.year(acta.fechaNacimientoFeligres)}">
-                  [Fecha de Nacimiento]</span>.
-    </p>
-
-    <p>
-        Hijo/a legítimo/a de <span class="data" th:text="${acta.padreNombreText}">[Nombre del Padre]</span>
-        y de <span class="data" th:text="${acta.madreNombreText}">[Nombre de la Madre]</span>.
-    </p>
-
-    <p>
-        Fue confirmado/a el día
+        se encuentra la partida del Matrimonio celebrado el día
         <span class="data"
               th:text="${#temporals.day(acta.fechaCelebracion)} + ' de ' + ${#temporals.monthName(acta.fechaCelebracion)} + ' de ' + ${#temporals.year(acta.fechaCelebracion)}">
-                  [Fecha de Confirmación]</span>,
-        por S.E.R. Mons. <span class="data" th:text="${acta.ministroOficianteNombre}">[Nombre del Obispo]</span>.
+                  [Fecha de Matrimonio]</span>.
     </p>
 
     <p>
-        Fue su Padrino/Madrina:
-        <span class="data" th:text="${acta.padrino1Nombre}">[Nombre del Padrino/Madrina]</span>.
+        Entre <span class="data" th:text="${acta.nombreCompletoFeligres}">[Nombre Completo Contrayente 1]</span>,
+        hijo/a de <span class="data" th:text="${acta.padreNombreText}">[Padre C1]</span> y
+        <span class="data" th:text="${acta.madreNombreText}">[Madre C1]</span>.
+    </p>
+
+    <p>
+        Y <span class="data" th:text="${acta.contrayente2NombreCompleto}">[Nombre Completo Cónyuge]</span>,
+        hijo/a de <span class="data" th:text="${acta.contrayente2PadreNombreText}">[Padre C2]</span> y
+        <span class="data" th:text="${acta.contrayente2MadreNombreText}">[Madre C2]</span>.
+    </p>
+
+    <p>
+        El Sacramento fue administrado por el <span class="data" th:text="${acta.ministroOficianteNombre}">[Nombre del Ministro Oficiante]</span>.
+    </p>
+
+    <p>
+        Fueron Testigos:
+        <span class="data" th:text="${acta.testigo1Nombre}">[Nombre del Testigo 1]</span>
+        y <span class="data" th:text="${acta.testigo2Nombre}">[Nombre del Testigo 2]</span>.
     </p>
 
     <p th:if="${acta.notas != null and acta.notas.length() > 0}">

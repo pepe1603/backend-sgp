@@ -11,6 +11,8 @@ import com.sgp.person.model.Person;
 import com.sgp.person.repository.PersonRepository;
 import com.sgp.sacrament.enums.SacramentType;
 import com.sgp.sacrament.model.Sacrament;
+import com.sgp.sacrament.model.SacramentDetail;
+import com.sgp.sacrament.repository.SacramentDetailRepository;
 import com.sgp.sacrament.repository.SacramentRepository;
 import com.sgp.user.model.Role;
 import com.sgp.user.model.User;
@@ -28,10 +30,6 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Clase para inicializar datos esenciales (Roles) y de prueba
- * (Usuario Admin, Parroquia, Personas, Citas, Sacramentos).
- */
 @Configuration
 public class InitialSetupRunner {
 
@@ -47,26 +45,29 @@ public class InitialSetupRunner {
             ParishRepository parishRepository,
             AppointmentRepository appointmentRepository,
             SacramentRepository sacramentRepository,
+            // ⭐ Repositorio de Detalles de Sacramento ⭐
+            SacramentDetailRepository sacramentDetailRepository,
             PasswordEncoder passwordEncoder) {
 
         return args -> {
             // 1. Inicializar Roles
             initializeRoles(roleRepository);
 
-            // 2. Crear Parroquia de prueba (sin Diócesis por ahora)
+            // 2. Crear Parroquia de prueba
             Parish demoParish = createDemoParish(parishRepository);
 
             // 3. Crear el Usuario ADMIN y su Persona
-            createAdminUser(userRepository, roleRepository, personRepository, passwordEncoder, demoParish);
+            // ⭐ CAPTURAR DIRECTAMENTE LA PERSONA DEL ADMIN ⭐
+            Person adminPerson = createAdminUser(userRepository, roleRepository, personRepository, passwordEncoder, demoParish);
 
             // 4. Crear el resto de datos de prueba
-            createDemoUsersAndData(userRepository, roleRepository, personRepository, appointmentRepository, sacramentRepository, passwordEncoder, demoParish);
+            // ⭐ Pasamos adminPerson para que pueda ser el Ministro Oficiante ⭐
+            createDemoUsersAndData(userRepository, roleRepository, personRepository, appointmentRepository, sacramentRepository, sacramentDetailRepository, passwordEncoder, demoParish, adminPerson);
         };
     }
-
     // ----------------------------------------------------------------------------------
-    // LÓGICA DE ROLES (Mantenida)
-    // ----------------------------------------------------------------------------------
+// LÓGICA DE ROLES (Mantenida)
+// ----------------------------------------------------------------------------------
     private void initializeRoles(RoleRepository roleRepository) {
         Set<RoleName> allRoleNames = Arrays.stream(RoleName.values()).collect(Collectors.toSet());
         for (RoleName roleName : allRoleNames) {
@@ -80,7 +81,7 @@ public class InitialSetupRunner {
     }
 
     // ----------------------------------------------------------------------------------
-    // LÓGICA DE PARROQUIA (AJUSTADO: Sin Diócesis)
+    // LÓGICA DE PARROQUIA (Mantenida)
     // ----------------------------------------------------------------------------------
     private Parish createDemoParish(ParishRepository parishRepository) {
         return parishRepository.findByName("Parroquia de San Miguel Arcángel")
@@ -98,16 +99,16 @@ public class InitialSetupRunner {
     }
 
     // ----------------------------------------------------------------------------------
-    // LÓGICA DE USUARIO ADMIN (AJUSTADO: Sin isActive en builder)
+    // LÓGICA DE USUARIO ADMIN (CORREGIDA: Ahora retorna Person)
     // ----------------------------------------------------------------------------------
-    private User createAdminUser(
-            UserRepository userRepository,
-            RoleRepository roleRepository,
-            PersonRepository personRepository,
-            PasswordEncoder passwordEncoder,
-            Parish parish) {
+    private Person createAdminUser( // ⭐ CAMBIAR EL TIPO DE RETORNO A Person ⭐
+                                    UserRepository userRepository,
+                                    RoleRepository roleRepository,
+                                    PersonRepository personRepository,
+                                    PasswordEncoder passwordEncoder,
+                                    Parish parish) {
 
-        return userRepository.findByEmail(ADMIN_EMAIL)
+        return personRepository.findByIdentificationTypeAndIdentificationNumber("CC", "000316") // Buscamos por ID de Persona
                 .orElseGet(() -> {
                     Role adminRole = roleRepository.findByName(RoleName.ADMIN).get();
 
@@ -115,30 +116,26 @@ public class InitialSetupRunner {
                             .email(ADMIN_EMAIL)
                             .password(passwordEncoder.encode(ADMIN_PASSWORD))
                             .isEnabled(true)
-                            // ⭐ IMPORTANTE: isActive SE OMITE, USA EL DEFAULT=TRUE DE Auditable ⭐
                             .forcePasswordChange(false)
                             .roles(Set.of(adminRole))
                             .build();
 
-                    // Si quisiéramos asegurarnos, podríamos usar el setter, pero el default ya es true:
-                    // adminUser.setActive(true);
-
                     User savedUser = userRepository.save(adminUser);
 
                     Person adminPerson = Person.builder()
-                            .firstName("Jose COlombio")
+                            .firstName("Jose Colombio")
                             .lastName("Gonzalez Perez")
                             .identificationType("CC")
                             .identificationNumber("000316")
                             .gender(Gender.MALE)
                             .birthDate(LocalDate.of(1990, 1, 1))
-                            .user(savedUser)
+                            .user(savedUser) // ⭐ CRUCIAL: Asociar el User al objeto Person ⭐
                             .parish(parish)
                             .build();
 
-                    personRepository.save(adminPerson);
-                    System.out.println("✅ Usuario Super ADMIN creado.");
-                    return savedUser;
+                    Person savedPerson = personRepository.save(adminPerson);
+                    System.out.println("✅ Usuario Super ADMIN y Persona creados.");
+                    return savedPerson; // ⭐ RETORNAR LA PERSONA GUARDADA ⭐
                 });
     }
 
@@ -152,23 +149,27 @@ public class InitialSetupRunner {
             PersonRepository personRepository,
             AppointmentRepository appointmentRepository,
             SacramentRepository sacramentRepository,
+            SacramentDetailRepository sacramentDetailRepository, // ⭐ Repositorio de Detalles
             PasswordEncoder passwordEncoder,
-            Parish demoParish) {
+            Parish demoParish,
+            Person adminPerson) { // ⭐ Persona del Admin
 
-        if (userRepository.count() > 1) {
-            System.out.println("ℹ️ Ya existen usuarios de prueba. Omitiendo creación de DEMO.");
+        // Si ya hay más de 3 personas (Admin + Coordinator + 1 Feligrés base), omitimos la creación.
+        if (personRepository.count() > 3) {
+            System.out.println("ℹ️ Ya existen datos de prueba suficientes. Omitiendo creación de DEMO.");
             return;
         }
 
         Role userRole = roleRepository.findByName(RoleName.USER).get();
         Role coordinatorRole = roleRepository.findByName(RoleName.COORDINATOR).get();
 
-        // 1. Usuario COORDINATOR/GESTOR
+        // --- 1. PERSONAS DE ROL CANÓNICO Y ADMINISTRATIVO ---
+
+        // Usuario COORDINATOR/GESTOR
         User coordinatorUser = User.builder()
                 .email("coordinador@demo.com")
                 .password(passwordEncoder.encode("Coord123"))
                 .isEnabled(true)
-                // isActive se omite (usa default=true)
                 .forcePasswordChange(true)
                 .roles(Set.of(coordinatorRole, userRole))
                 .build();
@@ -187,19 +188,58 @@ public class InitialSetupRunner {
         personRepository.save(coordinatorPerson);
         System.out.println("✅ Usuario COORDINATOR creado.");
 
+        // Ministro Oficiante (Pbro. - Sin User de aplicación)
+        Person minister = Person.builder()
+                .firstName("Padre Juan Pablo")
+                .lastName("Vergara Silva")
+                .identificationType("CC")
+                .identificationNumber("11223344")
+                .gender(Gender.MALE)
+                .birthDate(LocalDate.of(1975, 7, 25))
+                .parish(demoParish)
+                .build();
+        minister = personRepository.save(minister);
+        System.out.println("✅ Persona Ministro (Pbro.) creada.");
 
-        // 2. Usuario USER/FELIGRÉS (El que recibe el sacramento)
+        // Padrino 1 / Testigo 1 (Sin User de aplicación)
+        Person godfatherWitness1 = Person.builder()
+                .firstName("Sofía")
+                .lastName("Ramos Castro")
+                .identificationType("CC")
+                .identificationNumber("66778899")
+                .gender(Gender.FEMALE)
+                .birthDate(LocalDate.of(1995, 3, 10))
+                .parish(demoParish)
+                .build();
+        godfatherWitness1 = personRepository.save(godfatherWitness1);
+        System.out.println("✅ Persona Padrino/Testigo 1 (Sofía) creada.");
+
+        // Padrino 2 / Testigo 2 (Sin User de aplicación)
+        Person godfatherWitness2 = Person.builder()
+                .firstName("Roberto")
+                .lastName("Molina Flores")
+                .identificationType("CC")
+                .identificationNumber("55443322")
+                .gender(Gender.MALE)
+                .birthDate(LocalDate.of(1992, 9, 18))
+                .parish(demoParish)
+                .build();
+        godfatherWitness2 = personRepository.save(godfatherWitness2);
+        System.out.println("✅ Persona Padrino/Testigo 2 (Roberto) creada.");
+
+        // --- 2. FELIGRESES (SACRAMENTANDOS) ---
+
+        // Feligrés 1 (Carlos López - Contrayente 1, Bautizado, Confirmado)
         User regularUser = User.builder()
                 .email("feligres@demo.com")
                 .password(passwordEncoder.encode("Feligres123"))
                 .isEnabled(true)
-                // isActive se omite (usa default=true)
                 .forcePasswordChange(false)
                 .roles(Set.of(userRole))
                 .build();
         regularUser = userRepository.save(regularUser);
 
-        Person regularPerson = Person.builder()
+        Person feligres1 = Person.builder()
                 .firstName("Carlos Andrés")
                 .lastName("López Díaz")
                 .identificationType("CC")
@@ -209,31 +249,113 @@ public class InitialSetupRunner {
                 .parish(demoParish)
                 .user(regularUser)
                 .build();
-        personRepository.save(regularPerson);
-        System.out.println("✅ Usuario USER/FELIGRÉS creado.");
+        feligres1 = personRepository.save(feligres1);
+        System.out.println("✅ Feligrés 1 (Carlos López) creado.");
+
+        // Feligrés 2 / Cónyuge (Luisa Vargas - Contrayente 2)
+        Person feligres2Spouse = Person.builder()
+                .firstName("Luisa Fernanda")
+                .lastName("Vargas Pérez")
+                .identificationType("CC")
+                .identificationNumber("22446688")
+                .gender(Gender.FEMALE)
+                .birthDate(LocalDate.of(2002, 5, 12))
+                .parish(demoParish)
+                .build();
+        feligres2Spouse = personRepository.save(feligres2Spouse);
+        System.out.println("✅ Feligrés 2 (Luisa Vargas) creado.");
 
 
-        // ... (Creación de Sacramentos y Citas de Prueba) ...
+        // --- 3. CREACIÓN DE REGISTROS SACRAMENTALES (con Detalles) ---
+
+        // BAUTISMO
         Sacrament baptism = Sacrament.builder()
                 .type(SacramentType.BAPTISM)
-                .person(regularPerson)
+                .person(feligres1)
                 .parish(demoParish)
-                .celebrationDate(LocalDate.of(2023, 11, 5))
+                .celebrationDate(LocalDate.of(2003, 5, 10))
                 .bookNumber("B-101")
                 .pageNumber("30")
                 .entryNumber("1234")
+                .notes("Registrado en la Parroquia de San Judas Tadeo.")
                 .build();
-        sacramentRepository.save(baptism);
-        System.out.println("✅ Bautismo de Feligrés registrado.");
+        baptism = sacramentRepository.save(baptism);
 
+        SacramentDetail baptismDetail = SacramentDetail.builder()
+                .sacrament(baptism)
+                .officiantMinister(minister)
+                .godfather1(godfatherWitness1)
+                .godfather2(godfatherWitness2)
+                .fatherNameText("Pedro López González")
+                .motherNameText("Marta Díaz Ríos")
+                .build();
+        sacramentDetailRepository.save(baptismDetail);
+        baptism.setSacramentDetail(baptismDetail);
+        sacramentRepository.save(baptism);
+        System.out.println("✅ Sacramento de Bautismo (ID: " + baptism.getId() + ") completo.");
+
+        // CONFIRMACIÓN
+        Sacrament confirmation = Sacrament.builder()
+                .type(SacramentType.CONFIRMATION)
+                .person(feligres1)
+                .parish(demoParish)
+                .celebrationDate(LocalDate.of(2015, 6, 20))
+                .bookNumber("C-050")
+                .pageNumber("15")
+                .entryNumber("5678")
+                .build();
+        confirmation = sacramentRepository.save(confirmation);
+
+        SacramentDetail confirmationDetail = SacramentDetail.builder()
+                .sacrament(confirmation)
+                .officiantMinister(adminPerson) // Usamos la Persona del Admin como Obispo
+                .godfather1(godfatherWitness1)
+                .fatherNameText("Pedro López González")
+                .motherNameText("Marta Díaz Ríos")
+                .build();
+        sacramentDetailRepository.save(confirmationDetail);
+        confirmation.setSacramentDetail(confirmationDetail);
+        sacramentRepository.save(confirmation);
+        System.out.println("✅ Sacramento de Confirmación (ID: " + confirmation.getId() + ") completo.");
+
+        // MATRIMONIO
+        Sacrament matrimony = Sacrament.builder()
+                .type(SacramentType.MATRIMONY)
+                .person(feligres1) // Contrayente 1 (Carlos)
+                .parish(demoParish)
+                .celebrationDate(LocalDate.of(2025, 1, 15))
+                .bookNumber("M-022")
+                .pageNumber("07")
+                .entryNumber("9012")
+                .build();
+        matrimony = sacramentRepository.save(matrimony);
+
+        SacramentDetail matrimonyDetail = SacramentDetail.builder()
+                .sacrament(matrimony)
+                .officiantMinister(minister)
+                .spouse(feligres2Spouse) // Contrayente 2 (Luisa)
+                .witness1(godfatherWitness1)
+                .witness2(godfatherWitness2)
+                .fatherNameText("Pedro López González")
+                .motherNameText("Marta Díaz Ríos")
+                .spouseMotherNameText("Luisa Perez Mateo")
+                .spouseFatherNameText("Felipe Loarca Leones")
+                .build();
+        sacramentDetailRepository.save(matrimonyDetail);
+        matrimony.setSacramentDetail(matrimonyDetail);
+        sacramentRepository.save(matrimony);
+        System.out.println("✅ Sacramento de Matrimonio (ID: " + matrimony.getId() + ") completo.");
+
+
+        // --- 4. CITA DE PRUEBA ---
         Appointment upcomingAppointment = Appointment.builder()
-                .person(regularPerson)
+                .person(feligres1)
                 .parish(demoParish)
                 .appointmentDateTime(LocalDateTime.now().plusDays(7).withHour(10).withMinute(0))
                 .status(AppointmentStatus.PENDING)
-                .subject("Confirmación Solicitada")
-                .notes("Esto es un campo NOTA")
-                .sacrament(baptism)
+                .subject("Solicitud de Matrimonio")
+                .notes("Revisar expedientes de Bautismo y Confirmación.")
+                .sacrament(matrimony)
                 .build();
         appointmentRepository.save(upcomingAppointment);
         System.out.println("✅ Cita de demostración creada.");
@@ -243,7 +365,11 @@ public class InitialSetupRunner {
         System.out.println("=======================================================");
         System.out.println("  👤 ADMIN: " + ADMIN_EMAIL + " | Pass: " + ADMIN_PASSWORD);
         System.out.println("  👷 COORDINATOR: coordinador@demo.com | Pass: Coord123");
-        System.out.println("  👨 USER: feligres@demo.com | Pass: Feligres123");
+        System.out.println("  👨 FELIGRÉS: feligres@demo.com | Pass: Feligres123");
+        System.out.println("  💡 IDs de prueba para certificados (GET /api/v1/certificates/{id}/pdf):");
+        System.out.println("     - Bautismo (ID): " + baptism.getId());
+        System.out.println("     - Confirmación (ID): " + confirmation.getId());
+        System.out.println("     - Matrimonio (ID): " + matrimony.getId());
         System.out.println("=======================================================");
     }
 }

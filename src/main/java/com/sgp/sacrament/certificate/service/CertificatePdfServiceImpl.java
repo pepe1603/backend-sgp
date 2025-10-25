@@ -12,6 +12,7 @@ import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Locale;
 
 @Service
@@ -38,6 +39,19 @@ public class CertificatePdfServiceImpl implements CertificatePdfService {
         Context context = new Context(Locale.forLanguageTag("es"));
         context.setVariable("acta", actaDTO);
 
+        try (var is = getClass().getResourceAsStream("/images/logo_church.png")) {
+            if (is == null) {
+                throw new RuntimeException("No se encontró el logo en /images/logo_church.png");
+            }
+            byte[] logoBytes = is.readAllBytes();
+            String logoBase64 = Base64.getEncoder().encodeToString(logoBytes);
+            context.setVariable("logoBase64", logoBase64);
+        } catch (IOException e) {
+            throw new RuntimeException("Error al leer el logo del certificado", e);
+        }
+
+
+
         // 5. Renderizar la plantilla HTML a string
         String htmlContent = htmlRenderService.render(templateName, context);
         System.out.println("HTML generado para PDF: \n" + htmlContent);
@@ -59,7 +73,7 @@ public class CertificatePdfServiceImpl implements CertificatePdfService {
             );
 
             // ✅ Definir el baseUrl para resolver imágenes o rutas relativas en HTML
-            String baseUrl = getClass().getResource("/templates/").toString();
+            String baseUrl = getClass().getResource("/").toString();
 
             // ✅ Renderizar con baseUrl (solo una llamada)
             renderer.setDocumentFromString(htmlContent, baseUrl);
