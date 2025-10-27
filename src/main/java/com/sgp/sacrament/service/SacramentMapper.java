@@ -37,5 +37,9 @@ public interface SacramentMapper {
     // ⭐ CORRECCIÓN 2: Usar getFullName() para Padrinos ⭐
     @Mapping(source = "godfather1.fullName", target = "godfather1Name")
     @Mapping(source = "godfather2.fullName", target = "godfather2Name")
+    // ⭐ NUEVOS MAPEOS PARA MATRIMONIO/TESTIGOS ⭐
+    @Mapping(source = "spouse.fullName", target = "spouseName")
+    @Mapping(source = "witness1.fullName", target = "witness1Name")
+    @Mapping(source = "witness2.fullName", target = "witness2Name")
     SacramentResponse.SacramentDetailResponse toDetailResponse(SacramentDetail detail);
 }

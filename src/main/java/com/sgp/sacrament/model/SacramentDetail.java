@@ -3,9 +3,7 @@ package com.sgp.sacrament.model;
 import com.sgp.common.model.Auditable;
 import com.sgp.person.model.Person;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * Entidad que almacena los detalles específicos de un sacramento, como padrinos,
@@ -15,6 +13,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "sacrament_details")
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class SacramentDetail extends Auditable {
 
@@ -76,4 +76,8 @@ public class SacramentDetail extends Auditable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "witness_2_id") // Nueva FK
     private Person witness2;
+
+    // ⭐ NUEVOS CAMPOS: Padres del Cónyuge 2 (Contrayente 2) ⭐
+    private String spouseFatherNameText; // Nombre del padre del cónyuge 2
+    private String spouseMotherNameText; // Nombre de la madre del cónyuge 2
 }

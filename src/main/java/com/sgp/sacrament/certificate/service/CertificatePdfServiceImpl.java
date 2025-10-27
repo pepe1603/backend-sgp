@@ -12,6 +12,7 @@ import org.xhtmlrenderer.pdf.ITextRenderer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Locale;
 
 @Service
@@ -28,41 +29,62 @@ public class CertificatePdfServiceImpl implements CertificatePdfService {
         Sacrament sacrament = sacramentRepository.findById(sacramentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sacramento", "ID-SACRAMENT", sacramentId));
 
-        // 2. Mapear la entidad a un DTO simple para la vista
+        // 2. Mapear la entidad a DTO para la vista
         SacramentCertificateDTO actaDTO = certificateMapper.toCertificateDTO(sacrament);
 
-        // 3. Determinar el nombre de la plantilla
-        // Usamos el tipo de sacramento para seleccionar la plantilla adecuada
+        // 3. Determinar el nombre de la plantilla HTML según el tipo de sacramento
         String templateName = "sacramentos/" + actaDTO.getTipoSacramento().name().toLowerCase() + "_template";
-        // Ejemplo: Si tipoSacramento es BAPTISM, la plantilla será 'sacramentos/baptism_template'
 
-        // 4. Preparar el Contexto de Thymeleaf
-        Context context = new Context(Locale.forLanguageTag("es")); // Usar español para formatos de fecha
+        // 4. Preparar el contexto de Thymeleaf
+        Context context = new Context(Locale.forLanguageTag("es"));
         context.setVariable("acta", actaDTO);
 
-        // 5. Renderizar la plantilla HTML
-        String htmlContent = htmlRenderService.render(templateName, context);
+        try (var is = getClass().getResourceAsStream("/images/logo_church.png")) {
+            if (is == null) {
+                throw new RuntimeException("No se encontró el logo en /images/logo_church.png");
+            }
+            byte[] logoBytes = is.readAllBytes();
+            String logoBase64 = Base64.getEncoder().encodeToString(logoBytes);
+            context.setVariable("logoBase64", logoBase64);
+        } catch (IOException e) {
+            throw new RuntimeException("Error al leer el logo del certificado", e);
+        }
 
-        // 6. Convertir HTML a PDF (Usando Flying Saucer/ITextRenderer)
+
+
+        // 5. Renderizar la plantilla HTML a string
+        String htmlContent = htmlRenderService.render(templateName, context);
+        System.out.println("HTML generado para PDF: \n" + htmlContent);
+
+        // 6. Generar el PDF usando Flying Saucer
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             ITextRenderer renderer = new ITextRenderer();
 
-            // Requerido para manejar UTF-8 y caracteres especiales como tildes
-            //renderer.getFontResolver().addFont("fonts/arial.ttf", BaseFont.IDENTITY_H, false);
-            // NOTA: Si usas una fuente específica como Times New Roman, debes asegurarte de que ITextRenderer pueda acceder a su archivo .ttf
-            renderer.getFontResolver().addFont("src/main/resources/fonts/Lora-Regular.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-            renderer.getFontResolver().addFont("src/main/resources/fonts/PlayfairDisplay-Regular.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            // ✅ Cargar fuentes desde el classpath (funciona en .jar y en IDE)
+            renderer.getFontResolver().addFont(
+                    getClass().getResource("/fonts/Lora-Regular.ttf").toString(),
+                    BaseFont.IDENTITY_H,
+                    BaseFont.EMBEDDED
+            );
+            renderer.getFontResolver().addFont(
+                    getClass().getResource("/fonts/PlayfairDisplay-Regular.ttf").toString(),
+                    BaseFont.IDENTITY_H,
+                    BaseFont.EMBEDDED
+            );
 
-            renderer.setDocumentFromString(htmlContent);
-            renderer.layout(); // Realiza el cálculo del layout
-            renderer.createPDF(os); // Genera el PDF en el OutputStream
+            // ✅ Definir el baseUrl para resolver imágenes o rutas relativas en HTML
+            String baseUrl = getClass().getResource("/").toString();
+
+            // ✅ Renderizar con baseUrl (solo una llamada)
+            renderer.setDocumentFromString(htmlContent, baseUrl);
+
+            renderer.layout();
+            renderer.createPDF(os);
 
             return os.toByteArray();
         } catch (IOException e) {
-            // Manejo de error de IO al escribir el PDF
             throw new RuntimeException("Error de I/O al generar el PDF del acta.", e);
         } catch (Exception e) {
-            // Manejo de errores de Flying Saucer
             throw new RuntimeException("Error durante la conversión HTML a PDF con Flying Saucer.", e);
         }
     }

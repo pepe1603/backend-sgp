@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title th:fragment="title" th:text="'Certificado de ' + ${acta.tipoSacramento.displayName}">Certificado Sacramental</title>
+
+    <style th:fragment="certificate-style">
+        /* === FUENTES PERSONALIZADAS === */
+        /* Asegúrate que la ruta sea correcta desde el motor de renderizado (generalmente classpath:/static/ o /resources/) */
+        @font-face {
+            font-family: 'Lora';
+            src: url('/fonts/Lora-Regular.ttf') format('truetype');
+            font-weight: normal;
+        }
+        @font-face {
+            font-family: 'Playfair Display';
+            src: url('/fonts/PlayfairDisplay-Regular.ttf') format('truetype');
+            font-weight: normal;
+        }
+
+        /* === ESTILOS GENERALES === */
+        @page {
+            size: A4;
+            margin: 0; /* Controlamos el margen con el padding del body */
+        }
+        body {
+            font-family: 'Lora', serif;
+            font-size: 12pt;
+            margin: 50px 70px; /* Margen de 5cm arriba/abajo, 7cm lados */
+            color: #222;
+            background-color: #fff;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #666;
+            padding-bottom: 15px;
+        }
+
+        .header img {
+            width: 120px;
+            height: auto;
+            margin-bottom: 15px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 26pt;
+            margin: 0;
+            letter-spacing: 2px;
+            color: #333;
+            text-transform: uppercase;
+        }
+
+        .header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 18pt;
+            margin: 5px 0 0 0;
+            color: #555;
+            text-transform: uppercase;
+        }
+
+        .header h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 16pt;
+            margin: 20px 0 0 0;
+            text-transform: uppercase;
+            color: #777;
+            letter-spacing: 1.5px;
+        }
+
+        .content {
+            line-height: 1.8;
+            text-align: justify;
+            margin-top: 20px;
+            font-family: 'Lora', serif;
+            font-size: 12pt;
+            color: #444;
+        }
+
+        .content p {
+            margin: 15px 0;
+        }
+
+        .data {
+            font-weight: 700;
+            text-transform: uppercase;
+            border-bottom: 1px dotted #999;
+            padding: 0 5px;
+            color: #000;
+        }
+
+        .signatures {
+            margin-top: 80px;
+            /* Usamos Flexbox para posicionamiento en la página, aunque puede requerir manejo especial en librerías PDF */
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-family: 'Lora', serif;
+            font-size: 11pt;
+            color: #333;
+        }
+
+        .signature-box {
+            width: 45%;
+            text-align: center;
+            /* Estilo de la línea de firma */
+            border-top: 1px solid black;
+            padding-top: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+<div th:fragment="layout (contentFragment)">
+
+    <div class="header">
+        <img src="../static/logo_church.png" alt="Logo Parroquia" />
+
+        <h1 th:text="'DIÓCESIS DE ' + ${acta.ciudadParroquiaCelebracion}">[Ciudad de la Diócesis]</h1>
+        <h2 th:text="'PARROQUIA DE ' + ${acta.nombreParroquiaCelebracion}">[Nombre Parroquia]</h2>
+        <h3 th:text="'CERTIFICADO DE ' + ${acta.tipoSacramento.displayName}">CERTIFICADO DE SACRAMENTO</h3>
+    </div>
+
+    <div class="content" th:replace="${contentFragment}">
+    </div>
+
+    <div class="signatures">
+        <div class="signature-box">
+            <p>Firma y Sello del Párroco</p>
+        </div>
+
+        <div class="signature-box">
+            <p th:text="'Dado en ' + ${acta.ciudadParroquiaCelebracion} + ', a ' +
+                    ${#temporals.day(acta.fechaEmisionCertificado)} + ' de ' + ${#temporals.monthName(acta.fechaEmisionCertificado)} + ' de ' + ${#temporals.year(acta.fechaEmisionCertificado)}">
+                [Lugar y Fecha de Expedición]
+            </p>
+            <p>Fecha de Expedición</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

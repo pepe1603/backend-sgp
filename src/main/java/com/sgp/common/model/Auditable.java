@@ -15,6 +15,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Getter // Usamos @Getter ya que los campos son gestionados por JPA
+@Setter
 @Where(clause = "is_active = true") // 👈 AÑADIR: Solo consulta registros activos por defecto
 @MappedSuperclass // No mapear como entidad, solo heredar campos
 @EntityListeners(AuditingEntityListener.class) // Habilita la escucha de eventos de JPA para actualizar las fechas
@@ -36,8 +37,23 @@ public abstract class Auditable {
      * Nota: Para que @CreatedBy y @LastModifiedBy funcionen, debes tener una configuración de auditoría en Spring Boot (usando AuditorAware) que le diga a JPA cómo obtener el nombre (o ID) del usuario logueado actualmente.
      * */
 
+
+
+    // ⭐ NUEVO: Campo de eliminación lógica (Soft Delete)
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt; // Fecha en que se realizó la eliminación lógica
+
     // Campo de estado (Activo/Inactivo) o eliminación lógica, // ⭐ CAMPO DE BORRADO LÓGICO ⭐
     @Setter
     @Column(name = "is_active", nullable = false, columnDefinition = "boolean default true" )
     private boolean isActive = true;
+
+    /**
+     * Marca la entidad como eliminada lógicamente, estableciendo isActive=false
+     * y registrando la fecha de borrado.
+     */
+    public void softDelete() {
+        this.isActive = false;
+        this.deletedAt = LocalDateTime.now();
+    }
 }

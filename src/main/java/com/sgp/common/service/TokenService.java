@@ -2,6 +2,7 @@ package com.sgp.common.service;
 
 import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,5 +22,14 @@ public class TokenService {
                 .mapToObj(CHARACTERS::charAt)
                 .map(Object::toString)
                 .collect(Collectors.joining());
+    }
+
+    /**
+     * Genera un token seguro basado en UUID (usado para Magic Links o tokens de larga duración/un solo uso).
+     * @return String con el token UUID.
+     */
+    public String generateSecureToken() {
+        // Un UUID V4 es un token criptográficamente seguro y único, ideal para Magic Links.
+        return UUID.randomUUID().toString();
     }
 }

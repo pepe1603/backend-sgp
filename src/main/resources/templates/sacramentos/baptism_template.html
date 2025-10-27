@@ -2,7 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
-    <title th:text="'Certificado de ' + ${acta.tipoSacramento.displayName}">Certificado de Confirmación</title>
+    <title th:text="'Certificado de ' + ${acta.tipoSacramento.displayName}">Certificado de Bautismo</title>
 
     <style>
         /* === FUENTES PERSONALIZADAS === */
@@ -120,25 +120,25 @@
             clear: both;
         }
     </style>
-
 </head>
 
 <body>
 <div class="header">
     <img th:src="'data:image/png;base64,' + ${logoBase64}" alt="Logo Parroquia"/>
 
+
     <h1 th:text="'DIÓCESIS DE ' + ${acta.ciudadParroquiaCelebracion}">[Ciudad de la Diócesis]</h1>
     <h2 th:text="'PARROQUIA DE ' + ${acta.nombreParroquiaCelebracion}">[Nombre Parroquia]</h2>
-    <h3 th:text="'CERTIFICADO DE ' + ${acta.tipoSacramento.displayName}">CERTIFICADO DE CONFIRMACIÓN</h3>
+    <h3 th:text="'CERTIFICADO DE ' + ${acta.tipoSacramento.displayName}">CERTIFICADO DE BAUTISMO</h3>
 </div>
 
 <div class="content">
     <p>
-        Certifico que en el Libro de Confirmaciones de esta Parroquia, al
+        Certifico que en el Libro de Bautismos de esta Parroquia, al
         <strong>Asiento:</strong> <span class="data" th:text="${acta.asiento}">[Número de Asiento]</span>,
         <strong>Folio:</strong> <span class="data" th:text="${acta.folio}">[Número de Folio]</span>,
         <strong>Libro:</strong> <span class="data" th:text="${acta.libro}">[Número de Libro]</span>,
-        se encuentra la partida de confirmación de
+        se encuentra la partida de bautismo del niño/a
         <span class="data" th:text="${acta.nombreCompletoFeligres}">[Nombre Completo del Feligres]</span>,
         nacido/a el día
         <span class="data"
@@ -152,16 +152,18 @@
     </p>
 
     <p>
-        Fue confirmado/a el día
+        Fue bautizado/a el día
         <span class="data"
               th:text="${#temporals.day(acta.fechaCelebracion)} + ' de ' + ${#temporals.monthName(acta.fechaCelebracion)} + ' de ' + ${#temporals.year(acta.fechaCelebracion)}">
-                  [Fecha de Confirmación]</span>,
-        por S.E.R. Mons. <span class="data" th:text="${acta.ministroOficianteNombre}">[Nombre del Obispo]</span>.
+                  [Fecha de Bautizo]</span>,
+        por el <span class="data" th:text="${acta.ministroOficianteNombre}">[Nombre del Ministro Oficiante]</span>.
     </p>
 
     <p>
-        Fue su Padrino/Madrina:
-        <span class="data" th:text="${acta.padrino1Nombre}">[Nombre del Padrino/Madrina]</span>.
+        Fueron sus Padrinos:
+        <span class="data"
+              th:text="${acta.padrino1Nombre} + (${acta.padrino2Nombre != null and acta.padrino2Nombre != '' and acta.padrino2Nombre != '-' ? ' y ' + acta.padrino2Nombre : ''})">
+                  [Nombres de los Padrinos]</span>.
     </p>
 
     <p th:if="${acta.notas != null and acta.notas.length() > 0}">

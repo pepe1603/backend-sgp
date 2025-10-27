@@ -56,4 +56,7 @@ public class SacramentRequest {
     private Long witness1Id; // ID del Testigo 1
 
     private Long witness2Id; // ID del Testigo 2
+
+    private String spouseFatherNameText; // Padre del cónyuge 2
+    private String spouseMotherNameText; // Madre del cónyuge 2
 }

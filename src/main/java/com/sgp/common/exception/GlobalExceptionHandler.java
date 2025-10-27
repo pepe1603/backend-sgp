@@ -93,6 +93,23 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
+
+    // ⭐ NUEVO MANEJADOR PARA CUENTA NO VERIFICADA (AccountNotVerifiedException) -> HTTP 403 ⭐
+    @ExceptionHandler(AccountNotVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleAccountNotVerifiedException(
+            AccountNotVerifiedException ex, HttpServletRequest request) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Account Not Verified")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
     // ⭐ NUEVO MANEJO ⭐
     // 5. Manejo de Cuentas Bloqueadas (Por intentos fallidos) -> HTTP 401
     @ExceptionHandler(LockedException.class)

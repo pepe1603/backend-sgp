@@ -40,5 +40,15 @@ public class SacramentResponse {
         private String originDioceseName;
         private String fatherNameText;
         private String motherNameText;
+
+        // ⭐ NUEVOS CAMPOS DE MATRIMONIO ⭐
+        // ⭐ CAMPO FALTANTE AGREGADO ⭐
+        private String spouseName; // Nombre del cónyuge (Contrayente 2)
+        private String spouseFatherNameText; // Padre del cónyuge 2
+        private String spouseMotherNameText; // Madre del cónyuge 2
+        private String witness1Name;
+        private String witness2Name;
+
+
     }
 }
