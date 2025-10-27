@@ -42,6 +42,10 @@ public class AuthServiceImpl implements AuthService {
     // Nota: Aunque no lo inyectamos aquí, usamos una variable de configuración para la URL base
     @Value("${app.frontend.url}")
     private String frontendBaseUrl;
+    @Value("${app.frontend.verification-path}")
+    private String frontendVerificationUrl;
+    @Value("${app.frontend.magic-link-path}")
+    private String frontendMagicLogin;
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -216,7 +220,7 @@ public class AuthServiceImpl implements AuthService {
         Map<String, Object> model = createEmailModel(user);
 
         // Crear el enlace de verificación. La URL debe apuntar al endpoint frontend que llama a verifyAccount.
-        String verificationLink = frontendBaseUrl + "/auth/verify-account?token=" + token;
+        String verificationLink = frontendVerificationUrl + "?token=" + token;
 
         model.put("verificationLink", verificationLink);
 
@@ -352,7 +356,7 @@ public class AuthServiceImpl implements AuthService {
         Map<String, Object> model = createEmailModel(user);
 
         // Usar la propiedad de configuración
-        String magicLink = frontendBaseUrl + "/auth/magic-login?token=" + token;
+        String magicLink = frontendMagicLogin + "?token=" + token;
 
         model.put("magicLink", magicLink);
 
