@@ -44,4 +44,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT u FROM User u LEFT JOIN FETCH Person p ON p.user = u") // Usa la relación 'user' de Person
     Page<User> findAllUsersWithPerson(Pageable pageable); // 👈 NUEVO MÉTODO DE BÚSQUEDA OPTIMIZADO
+
+    // Buscar usuario junto con su Person (evita N+1)
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.person WHERE u.id = :id")
+    Optional<User> findByIdWithPerson(Long id);
+
+    // Buscar todos los usuarios con su Person (paginado)
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.person")
+    Page<User> findAllWithPerson(Pageable pageable);
 }

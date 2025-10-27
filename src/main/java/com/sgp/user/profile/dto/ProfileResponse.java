@@ -1,4 +1,4 @@
-package com.sgp.user.dto;
+package com.sgp.user.profile.dto;
 
 import lombok.Builder;
 import lombok.Data;

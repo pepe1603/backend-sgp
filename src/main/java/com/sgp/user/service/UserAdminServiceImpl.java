@@ -135,6 +135,8 @@ public class UserAdminServiceImpl implements UserAdminService {
 
         boolean isCurrentUserAdmin = user.getRoles().stream().anyMatch(r -> r.getName() == RoleName.ADMIN);
 
+
+
         if (isCurrentUserAdmin) {
 
             // Determinar si el rol ADMIN será removido:
@@ -143,6 +145,12 @@ public class UserAdminServiceImpl implements UserAdminService {
                     .orElse(false); // Si 'roles' no se envía, no se remueve.
 
             // Determinar si el usuario será desactivado:
+            //Impedir la autodesactivación
+            Long currentUserId = SecurityUtil.getCurrentUserId();
+            if (user.getId().equals(currentUserId)) {
+                throw new ResourceConflictException(RESOURCE_NAME, "acción", "No puedes desactivar tu propia cuenta.");
+            }
+
             boolean isDisablingAdmin = request.getIsEnabled()
                     .map(enabled -> !enabled)
                     .orElse(false); // Si 'isEnabled' no se envía, no se desactiva.

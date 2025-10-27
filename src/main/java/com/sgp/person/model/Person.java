@@ -65,6 +65,7 @@ public class Person extends Auditable {
     @JoinColumn(name = "user_id", unique = true, nullable = true) // 'user_id' será la FK
     private User user;
 
+
     // ⭐ MÉTODO CALCULADO PARA OBTENER EL NOMBRE COMPLETO ⭐
     @Transient // Indica a JPA que este campo no debe ser persistido en la DB
     public String getFullName() {

@@ -50,4 +50,6 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
 
     // ⭐ MÉTODO CRÍTICO para obtener la persona del usuario logueado ⭐
     Optional<Person> findByUser(User user);
+
+
 }

@@ -1,5 +1,6 @@
 package com.sgp.user.controller;
 
+import com.sgp.user.dto.UserCreationRequest;
 import com.sgp.user.dto.UserManagementResponse;
 import com.sgp.user.dto.UserUpdateRequest;
 import com.sgp.user.service.UserAdminService;
@@ -20,6 +21,19 @@ import org.springframework.web.bind.annotation.*;
 public class UserAdminController {
 
     private final UserAdminService userAdminService;
+
+    // -------------------------------------------------------------
+    // ⭐ NUEVO ENDPOINT: Crear Usuario (Personal) por Administrador ⭐
+    // -------------------------------------------------------------
+    @PreAuthorize("hasAuthority('ADMIN')") // Solo ADMIN puede crear cuentas de personal/gestores
+    @PostMapping
+    public ResponseEntity<UserManagementResponse> createUserByAdmin(
+            @Valid @RequestBody UserCreationRequest request
+    ) {
+        UserManagementResponse response = userAdminService.createUserByAdmin(request);
+        // Retorna 201 Created
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
 
     // 🚀 NUEVO ENDPOINT DE ADMINISTRACIÓN CON PAGINACIÓN Y ORDENAMIENTO
 

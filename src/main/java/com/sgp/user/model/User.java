@@ -2,6 +2,7 @@ package com.sgp.user.model;
 
 
 import com.sgp.common.model.Auditable;
+import com.sgp.person.model.Person;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -39,6 +40,12 @@ public class User extends Auditable implements UserDetails {
     @Column(name = "force_password_change")
     private boolean forcePasswordChange = false;
 
+    // Relación OneToOne con Person.
+    // 'mappedBy' indica que la columna FK (user_id) está en la entidad Person.
+    // Cascade.ALL: Si guardas/eliminas un User, también se aplica a Person.
+    // orphanRemoval=true: Si desvinculas una Person del User (person=null), la Person se elimina de la DB.
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Person person;
 
     // Relación ManyToMany con Role
     @ManyToMany(fetch = FetchType.EAGER)
