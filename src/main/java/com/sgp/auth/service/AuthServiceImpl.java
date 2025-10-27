@@ -85,22 +85,26 @@ public class AuthServiceImpl implements AuthService {
         Person person = Person.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
-                .user(user)
+                .user(user)// ⭐ 1. Establece la bidireccionalidad en el lado 'dueño' (Person)
                 .build();
 
+        // ⭐ 2. ESTABLECER BIDIRECCIONALIDAD EN EL LADO INVERSO (User)
+        user.setPerson(person); // ¡Nuevo paso para completar la bidireccionalidad!
+        // ⭐ 3. Guardar SOLO el User (el Cascade.ALL en User guardará Person automáticamente)
+        User newUser = userRepository.save(user); // Guardar el User y la Person asociada (profile)
+        //personRepository.save(person); //LINEA ELIMINADA por redundancia de cascade.  NO NECESARIO SI SE ESTA USANDO CASCADEaLL EN UNA RELACIÓN BIDIRECCIONAL.
 
-        User newUser = userRepository.save(user); // Guardar el User y Profile
-        personRepository.save(person);
         // 2. Generar y Guardar el Código de Verificación
         String code = tokenService.generateAlphanumericCode(); // Código de 6 dígitos
         VerificationToken verificationToken = new VerificationToken(code, newUser);
         verificationTokenRepository.save(verificationToken);
+
         // 3. Enviar el Email
         sendVerificationEmail(newUser, code);
         return RegisterResponse.builder()
                 .email(newUser.getEmail())
                 .fullName(person.getFullName())
-                .message("Registro exitoso. Se ha enviado un código de verificación a su email para habilitar la cuenta.")
+                .message("Registro exitoso. Se ha enviado un código de verificación a su email para habilitar la cuenta y completar el registro.")
                 .requiresVerification(true)
                 .build();
     }
