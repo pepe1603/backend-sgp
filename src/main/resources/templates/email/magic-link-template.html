@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magic Link de Inicio de Sesión</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); overflow: hidden; }
+    .header { background-color: #3f51b5; color: #ffffff; padding: 20px; text-align: center; }
+    .content { padding: 30px; line-height: 1.6; color: #333333; }
+    .button-container { text-align: center; margin: 25px 0; }
+    .button { background-color: #4CAF50; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; }
+    .button:hover{ background-color: #4DA150; transition: 0.4s ease-in-out; cursor:pointer }
+    .footer { background-color: #eeeeee; color: #777777; padding: 15px; text-align: center; font-size: 12px; border-top: 1px solid #dddddd; }
+    .expiry-note { color: #d32f2f; font-size: 14px; margin-top: 15px; text-align: center; }
+    a { color: #3f51b5; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Inicia Sesión sin Contraseña</h1>
+  </div>
+  <div class="content">
+    <p>Hola <span th:text="${firstName}">[Nombre del Usuario]</span>,</p>
+
+    <p>Recibimos una solicitud para iniciar sesión en tu cuenta sin usar contraseña. Para acceder de forma segura, simplemente haz clic en el botón de abajo.</p>
+
+    <div class="button-container">
+      <!-- El Magic Link generado en AuthServiceImpl se inyecta aquí -->
+      <a th:href="${magicLink}" class="button">Acceder a Mi Cuenta</a>
+    </div>
+
+    <p class="expiry-note">Este enlace es de un solo uso y expirará pronto por razones de seguridad. Si el enlace ya no funciona, simplemente solicita uno nuevo.</p>
+
+    <p>Si no solicitaste este inicio de sesión, ignora este correo. Tu cuenta permanecerá segura.</p>
+
+    <p>Saludos cordiales,</p>
+    <p>El equipo de SGP</p>
+  </div>
+  <div class="footer">
+    <p>Este es un correo electrónico automático, por favor no responda.</p>
+  </div>
+</div>
+</body>
+</html>

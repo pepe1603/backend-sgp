@@ -6,6 +6,7 @@ import com.sgp.user.profile.dto.ProfileUpdateRequest;
 import com.sgp.user.profile.service.UserProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -52,5 +53,15 @@ public class ProfileController {
             @Valid @RequestBody PasswordUpdateRequest request) {
         userProfileService.changeMyPassword(request);
         return ResponseEntity.noContent().build(); // 204 No Content
+    }
+
+    /**
+     * ⭐ NUEVO ENDPOINT: Borrado Lógico (Dar de Baja) de la cuenta autenticada (DELETE /api/v1/users/me).
+     */
+    @DeleteMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    @ResponseStatus(HttpStatus.NO_CONTENT) // Retorna 204 No Content
+    public void softDeleteMyAccount() {
+        userProfileService.softDeleteMyAccount();
     }
 }

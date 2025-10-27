@@ -1,5 +1,7 @@
 package com.sgp.user.profile.service;
 
+import com.sgp.common.enums.RoleName;
+import com.sgp.common.exception.InvalidStateTransitionException;
 import com.sgp.common.exception.ResourceNotFoundException;
 import com.sgp.common.util.SecurityUtil;
 import com.sgp.person.model.Person;
@@ -33,10 +35,13 @@ public class UserProfileServiceImpl implements UserProfileService { // ¡CAMBIO 
      */
     @Override // Buena práctica: Añadir @Override
     public ProfileResponse getCurrentUserProfile() {
-        // ... (resto del cuerpo del método permanece IGUAL)
+
         User user = SecurityUtil.getCurrentUserAuthenticated();
 
         // 1. Buscar la entidad Person asociada al User
+        // NOTA: Si el usuario ya se borró lógicamente (isActive=false), esta línea fallará
+        // si el filtro @Where está activo. Como esta es una ruta de perfil,
+        // asumimos que el usuario autenticado aún está "activo" para el sistema de seguridad.
         Person person = personRepository.findByUser(user)
                 .orElseThrow(() -> new ResourceNotFoundException("Persona", "usuario", user.getEmail()));
 
@@ -62,7 +67,7 @@ public class UserProfileServiceImpl implements UserProfileService { // ¡CAMBIO 
     @Override // Buena práctica: Añadir @Override
     @Transactional
     public ProfileResponse updateMyProfile(ProfileUpdateRequest request) {
-        // ... (resto del cuerpo del método permanece IGUAL)
+
         User user = SecurityUtil.getCurrentUserAuthenticated();
 
         // 1. Buscar la entidad Person asociada al User
@@ -87,10 +92,10 @@ public class UserProfileServiceImpl implements UserProfileService { // ¡CAMBIO 
     /**
      * Cambia la contraseña del usuario autenticado.
      */
-    @Override // Buena práctica: Añadir @Override
+    @Override
     @Transactional
     public void changeMyPassword(PasswordUpdateRequest request) {
-        // ... (resto del cuerpo del método permanece IGUAL)
+
         User user = SecurityUtil.getCurrentUserAuthenticated();
 
         // 1. Validar que la nueva contraseña y su confirmación coincidan
@@ -109,5 +114,30 @@ public class UserProfileServiceImpl implements UserProfileService { // ¡CAMBIO 
 
         // 4. Guardar la entidad User actualizada
         userRepository.save(user);
+    }
+    // --- NUEVO: Dar de Baja (Borrado Lógico) por el Propio Usuario ---
+    @Transactional
+    @Override
+    public void softDeleteMyAccount() {
+        User user = SecurityUtil.getCurrentUserAuthenticated();
+
+        // 1. VALIDACIÓN DE ADMIN ÚNICO: Impedir que el último ADMIN activo se de de baja.
+        boolean isCurrentUserAdmin = user.getRoles().stream().anyMatch(r -> r.getName() == RoleName.ADMIN);
+
+        if (isCurrentUserAdmin) {
+            // Reutilizamos el método de conteo del repositorio de administración
+            long adminCount = userRepository.countByRolesName(RoleName.ADMIN);
+
+            if (adminCount == 1) {
+                throw new InvalidStateTransitionException(
+                        "Conflicto de estado: No puedes dar de baja tu cuenta ya que eres el único administrador restante. Contacta a soporte para transferir el rol de administrador antes de proceder."
+                );
+            }
+        }
+
+        // 2. APLICAR BORRADO LÓGICO
+        user.softDelete(); // Establece isActive = false y registra deletedAt
+        user.setEnabled(false); // También deshabilitamos el inicio de sesión
+        userRepository.save(user); // Persistimos los cambios
     }
 }

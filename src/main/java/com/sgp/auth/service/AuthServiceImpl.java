@@ -1,6 +1,7 @@
 package com.sgp.auth.service;
 
-import com.sgp.auth.dto.RegisterResponse;
+import com.sgp.auth.dto.*;
+import com.sgp.auth.enums.TokenType;
 import com.sgp.common.enums.RoleName;
 import com.sgp.common.exception.*;
 import com.sgp.common.queue.MailProducer;
@@ -10,9 +11,6 @@ import com.sgp.person.model.Person;
 import com.sgp.person.repository.PersonRepository;
 import com.sgp.security.config.jwt.JwtService;
 import com.sgp.security.service.LoginAttemptService;
-import com.sgp.auth.dto.LoginResponse;
-import com.sgp.auth.dto.LoginRequest;
-import com.sgp.auth.dto.RegisterRequest;
 import com.sgp.security.service.OtpAttemptService;
 import com.sgp.user.model.Role;
 import com.sgp.user.model.User;
@@ -22,6 +20,7 @@ import com.sgp.user.repository.UserRepository;
 import com.sgp.auth.repository.VerificationTokenRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -40,6 +39,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j // Agregado para el log en Magic Link
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -96,7 +96,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 2. Generar y Guardar el Código de Verificación
         String code = tokenService.generateAlphanumericCode(); // Código de 6 dígitos
-        VerificationToken verificationToken = new VerificationToken(code, newUser);
+        VerificationToken verificationToken = new VerificationToken(code, newUser, TokenType.ACCOUNT_VERIFICATION);//Establecer el tyipo de token
         verificationTokenRepository.save(verificationToken);
 
         // 3. Enviar el Email
@@ -115,7 +115,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void verifyAccount(String code) {
-        VerificationToken token = verificationTokenRepository.findByToken(code)
+        VerificationToken token = verificationTokenRepository.findByTokenAndType(code, TokenType.ACCOUNT_VERIFICATION) //Verificar por Token y tipo
                 .orElseThrow(() -> new VerificationCodeInvalidException("No se encontró un código válido. Solicita uno nuevo o revisa tu bandeja de entrada."));
 
         otpAttemptService.checkBlockedOrThrow(token.getUser().getEmail(), otpAttemptService.CONTEXT_VERIFY);
@@ -200,12 +200,112 @@ public class AuthServiceImpl implements AuthService {
 
         // 2. Generar y Guardar el nuevo Código
         String newCode = tokenService.generateAlphanumericCode();
-        VerificationToken verificationToken = new VerificationToken(newCode, user);
+        VerificationToken verificationToken = new VerificationToken(newCode, user, TokenType.ACCOUNT_VERIFICATION);//Establecer el tipo de token
         verificationTokenRepository.save(verificationToken);
 
-        // 3. Enviar el Email usdanod paltilal de reeenvio
+        // 3. Enviar el Email de plantilla de reenvio
         sendVerificationResendEmail(user, newCode);
     }
+
+
+    // ⭐ IMPLEMENTACIÓN DEL MAGIC LINK - PASO 1: SOLICITUD ⭐
+    @Override
+    @Transactional
+    public void requestMagicLink(MagicLinkRequest request) {
+        String email = request.getEmail();
+
+        // 1. Verificar si el usuario existe
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
+
+        // 2. Verificar si la cuenta está habilitada
+        if (!user.isEnabled()) {
+            throw new AccountNotVerifiedException("Su cuenta no ha sido verificada, no puede iniciar sesión. Por favor, verifique su email o solicite un reenvío para completar su registro.");
+        }
+
+        // 3. Eliminar tokens de verificación antiguos para este usuario (incluyendo el OTP de registro si existía)
+        verificationTokenRepository.deleteByUser(user);
+        entityManager.flush();
+
+        // 4. Generar y Guardar un token seguro (UUID)
+        String token = tokenService.generateSecureToken(); // Usamos un token largo, no un OTP
+
+        VerificationToken magicToken = new VerificationToken(token, user, TokenType.MAGIC_LINK); //usamos toke UUID y establecer el tipo Magic_Link
+        // El tiempo de expiración es crucial aquí. Por defecto, VerificationToken usa 2 horas.
+        // Si necesitas que el Magic Link expire antes (ej: 15 minutos), debes ajustar ese tiempo en el constructor de VerificationToken.
+        verificationTokenRepository.save(magicToken);
+
+        // 5. Enviar el Email con el link
+        sendMagicLinkEmail(user, token);
+        log.info("Magic Link generado (UUID) para {} con tipo: {}", email, TokenType.MAGIC_LINK);
+    }
+
+    // ⭐ IMPLEMENTACIÓN DEL MAGIC LINK - PASO 2: VERIFICACIÓN Y LOGIN ⭐
+    @Override
+    @Transactional
+    public LoginResponse verifyMagicLink(String token) {
+
+        // 1. Buscar y validar el token (tiempo de expiración incluido por el repository)
+        VerificationToken magicToken = verificationTokenRepository.findByTokenAndType(token, TokenType.MAGIC_LINK)//Busdcar por token y tipo Magic_Link
+                .orElseThrow(() -> new VerificationCodeInvalidException("El Magic Link es inválido o ya ha sido utilizado."));
+
+        // 2. Comprobar Expiración (aunque el repository debería hacerlo, doble check)
+        if (magicToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            verificationTokenRepository.delete(magicToken);
+            throw new VerificationCodeExpiredException("El Magic Link ha expirado. Por favor, solicite uno nuevo.");
+        }
+
+        User user = magicToken.getUser();
+
+        // 3. Reconfirmar si el usuario está habilitado (aunque se verificó al solicitarlo)
+        if (!user.isEnabled()) {
+            // Este caso es poco probable si se verificó en requestMagicLink, pero añade seguridad.
+            throw new AccountNotVerifiedException("Su cuenta no está activa. No puede iniciar sesión.");
+        }
+
+        // 4. ELIMINAR EL TOKEN (CRUCIAL para seguridad: solo se usa una vez)
+        verificationTokenRepository.delete(magicToken);
+
+        // 5. Generar JWT de sesión (equivalente a un login exitoso)
+        UserDetails userDetails = userRepository.findByEmail(user.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("Error interno: Usuario verificado no encontrado."));
+
+        String jwtToken = jwtService.generateToken(userDetails);
+        Set<String> roles = userDetails.getAuthorities().stream().map(auth -> auth.getAuthority()).collect(java.util.stream.Collectors.toSet());
+
+        // 6. Devolver respuesta de login exitoso
+        return LoginResponse.builder()
+                .token(jwtToken)
+                .email(userDetails.getUsername())
+                .roles(roles)
+                .tokenType("Bearer")
+                .build();
+    }
+
+
+    // ⭐ NUEVO MÉTODO DE ENVÍO DE EMAIL PARA MAGIC LINK ⭐
+    private void sendMagicLinkEmail(User user, String token) {
+        Map<String, Object> model = new HashMap<>();
+
+        personRepository.findByUser(user).ifPresent(person -> {
+            model.put("firstName", person.getFirstName());
+        });
+
+        // Usar una propiedad para la URL base es la mejor práctica
+        String baseUrl = "http://localhost:3000"; // Usar el valor hardcodeado hasta que tengamos un @Value
+        String magicLink = baseUrl + "/auth/magic-login?token=" + token; // Simplificado, el email se puede obtener del token en el cliente
+
+        model.put("magicLink", magicLink);
+
+        mailProducer.sendMailMessage(
+                user.getEmail(),
+                "Inicia Sesión sin Contraseña",
+                "email/magic-link-template", // <-- Asume que esta plantilla existe
+                model
+        );
+    }
+
+
     // ⭐ NUEVO MÉTODO DE ENVÍO PARA REENVÍO SOLICITADO POR EL USUARIO ⭐
     private void sendVerificationResendEmail(User user, String code) {
         Map<String, Object> model = new HashMap<>();
@@ -259,6 +359,8 @@ public class AuthServiceImpl implements AuthService {
                 model
         );
     }
+
+
 
 
 }

@@ -1,9 +1,6 @@
 package com.sgp.auth.service;
 
-import com.sgp.auth.dto.LoginRequest;
-import com.sgp.auth.dto.LoginResponse;
-import com.sgp.auth.dto.RegisterRequest;
-import com.sgp.auth.dto.RegisterResponse;
+import com.sgp.auth.dto.*;
 
 // new file: com.sgp.auth.service.AuthService.java
 public interface AuthService {
@@ -11,4 +8,8 @@ public interface AuthService {
     void verifyAccount(String code);
     LoginResponse login(LoginRequest request);
     void resendVerificationCode(String email);
+    // ⭐ NUEVO MÉTODOSS DE MAGIC LINK ⭐
+    void requestMagicLink(MagicLinkRequest request);
+    // LoginResponse verifyMagicLink(String token);
+    LoginResponse verifyMagicLink(String token);
 }

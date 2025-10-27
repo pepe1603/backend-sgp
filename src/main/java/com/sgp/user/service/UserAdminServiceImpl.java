@@ -61,13 +61,13 @@ public class UserAdminServiceImpl implements UserAdminService {
         user.setRoles(roles);
         user.setEnabled(true); // Cuentas de personal se habilitan inmediatamente
         user.setActive(true);  // Y están activas
-        user.setForcePasswordChange( // ADMIN ELige si Qeuire cambio de contraseña Obligatorio
+        user.setForcePasswordChange( // ADMIN elige si Quiere cambio de contraseña Obligatorio
                 request.getForcePasswordChange() != null ? request.getForcePasswordChange() : true
         );
 
 
 
-        // 4. Crear Entidad Person (Remplazo de  Profile)
+        // 4. Crear Entidad Person (Remplazo de Profile)
         Person person = new Person();
         person.setFirstName(request.getFirstName());
         person.setLastName(request.getLastName());
@@ -130,12 +130,9 @@ public class UserAdminServiceImpl implements UserAdminService {
         // =========================================================================
 
         // A. VALIDACIÓN: Evitar dejar el sistema sin administrador activo.
-        // Esta validación debe ejecutarse si se intenta cambiar el rol O el estado 'isEnabled'.
-        // El borrado lógico ('isActive') no afecta el acceso, pero 'isEnabled' sí.
+        // Esta validación debe ejecutarse si se intenta cambiar el rol O el estado 'isEnabled' O 'isActive'.
 
         boolean isCurrentUserAdmin = user.getRoles().stream().anyMatch(r -> r.getName() == RoleName.ADMIN);
-
-
 
         if (isCurrentUserAdmin) {
 
@@ -144,18 +141,23 @@ public class UserAdminServiceImpl implements UserAdminService {
                     .map(newRoles -> !newRoles.contains(RoleName.ADMIN))
                     .orElse(false); // Si 'roles' no se envía, no se remueve.
 
-            // Determinar si el usuario será desactivado:
-            //Impedir la autodesactivación
-            Long currentUserId = SecurityUtil.getCurrentUserId();
-            if (user.getId().equals(currentUserId)) {
-                throw new ResourceConflictException(RESOURCE_NAME, "acción", "No puedes desactivar tu propia cuenta.");
-            }
-
+            // Determinar si el usuario será desactivado (isEnabled=false):
             boolean isDisablingAdmin = request.getIsEnabled()
                     .map(enabled -> !enabled)
                     .orElse(false); // Si 'isEnabled' no se envía, no se desactiva.
 
-            if (isRemovingAdminRole || isDisablingAdmin) {
+            // Determinar si el usuario será eliminado lógicamente (isActive=false):
+            boolean isSoftDeletingAdmin = request.getIsActive()
+                    .map(active -> !active)
+                    .orElse(false); // Si 'isActive' no se envía, no se elimina lógicamente.
+
+            // Impedir la autodesactivación (tanto enabled=false como active=false)
+            Long currentUserId = SecurityUtil.getCurrentUserId();
+            if (user.getId().equals(currentUserId) && (isDisablingAdmin || isSoftDeletingAdmin)) {
+                throw new ResourceConflictException(RESOURCE_NAME, "acción", "No puedes desactivar o eliminar lógicamente tu propia cuenta.");
+            }
+
+            if (isRemovingAdminRole || isDisablingAdmin || isSoftDeletingAdmin) {
                 long adminCount = userRepository.countByRolesName(RoleName.ADMIN);
 
                 // Si SOLO queda este usuario como administrador (activo o no):
@@ -185,22 +187,26 @@ public class UserAdminServiceImpl implements UserAdminService {
         // =========================================================================
 
         // 1. Manejar la actualización de isEnabled y isActive
-        // *Se eliminan las llamadas a userMapper.updateEntityFromRequest si el DTO solo tiene Optionals.*
-        // *Se mantienen los ifPresent para la actualización parcial (PATCH).*
         request.getIsEnabled().ifPresent(user::setEnabled);
-        request.getIsActive().ifPresent(user::setActive);
+
+        // ⭐ CAMBIO CRÍTICO: Si se solicita la desactivación (isActive=false), usamos softDelete()
+        request.getIsActive().ifPresent(newActiveState -> {
+            if (!newActiveState) {
+                // Si el request dice isActive: false, usamos el método softDelete()
+                user.softDelete();
+            } else {
+                // Si el request dice isActive: true (para reactivar)
+                user.setActive(true);
+                user.setDeletedAt(null); // Limpiamos la marca de tiempo de borrado
+            }
+        });
+
         request.getForcePasswordChange().ifPresent(newValue -> {
             if (!securityContextService.hasRole(RoleName.ADMIN)) {
                 throw new ResourceNotAuthorizedException("Solo un administrador puede cambiar la política de cambio de contraseña.");
             }
             user.setForcePasswordChange(newValue);
         });
-
-
-
-        // Si tu `UserUpdateRequest` tuviera otros campos simples (ej: firstName, lastName)
-        // que **NO** son Optionals, podrías usar el mapper para esos, pero para Optionals
-        // el `ifPresent` es la mejor práctica.
 
         // 2. Manejar la actualización de Roles (Solo si está presente en el request)
         request.getRoles().ifPresent(newRoleNames -> {
@@ -240,9 +246,23 @@ public class UserAdminServiceImpl implements UserAdminService {
         if (user.getId().equals(currentUserId)) {
             throw new ResourceConflictException(RESOURCE_NAME, "acción", "No puedes desactivar tu propia cuenta.");
         }
+        // 3. Opcional: Validar si es el único administrador
+        boolean isCurrentUserAdmin = user.getRoles().stream().anyMatch(r -> r.getName() == RoleName.ADMIN);
+        if (isCurrentUserAdmin) {
+            long adminCount = userRepository.countByRolesName(RoleName.ADMIN);
+            if (adminCount == 1) {
+                throw new InvalidStateTransitionException(
+                        String.format(
+                                "Conflicto de estado: El usuario '%s' (ID: %d) es el único administrador activo restante. Asigne el rol a otro usuario primero.",
+                                user.getEmail(), userId
+                        )
+                );
+            }
+        }
 
         // Borrado lógico: Establecer isActive a false
-        user.setActive(false);
+        // 4. ⭐ APLICAR EL BORRADO LÓGICO COMPLETO (isActive = false, deletedAt = NOW) ⭐
+        user.softDelete();
         userRepository.save(user); // Guardar el cambio de estado
     }
 }

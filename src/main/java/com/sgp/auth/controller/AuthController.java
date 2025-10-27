@@ -1,11 +1,8 @@
 package com.sgp.auth.controller;
 
+import com.sgp.auth.dto.*;
 import com.sgp.auth.service.AuthService;
 import com.sgp.security.config.jwt.JwtService;
-import com.sgp.auth.dto.LoginResponse;
-import com.sgp.auth.dto.LoginRequest;
-import com.sgp.auth.dto.RegisterRequest;
-import com.sgp.auth.dto.RegisterResponse;
 import com.sgp.user.model.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -66,5 +63,31 @@ public class AuthController {
     public ResponseEntity<String> resendVerification(@RequestParam String email) {
         authService.resendVerificationCode(email);
         return ResponseEntity.ok("Se ha enviado un nuevo código de verificación a su email.");
+    }
+
+    /**
+     // ⭐ NUEVO ENDPOINT: SOLICITUD DE MAGIC LINK ⭐
+     /**
+     * Endpoint para solicitar un Magic Link (Login sin contraseña).
+     * Ruta: POST /api/v1/auth/magic-link
+     */
+    @PostMapping("/magic-link")
+    public ResponseEntity<String> requestMagicLink(@Valid @RequestBody MagicLinkRequest request) {
+        authService.requestMagicLink(request);
+        return ResponseEntity.ok("Se ha enviado un Magic Link a su email para iniciar sesión.");
+    }
+
+    // ⭐ NUEVO ENDPOINT: VERIFICACIÓN DE MAGIC LINK ⭐
+    /**
+     * Endpoint que consume el token del Magic Link (Generalmente llamado desde el email/frontend).
+     * Ruta: GET /api/v1/auth/magic-link/verify?token={token}
+     * Devuelve el JWT de sesión directamente.
+     */
+    @GetMapping("/magic-link/verify")
+    public ResponseEntity<LoginResponse> verifyMagicLink(@RequestParam String token) {
+        LoginResponse response = authService.verifyMagicLink(token);
+        // NOTA: En un caso real, el cliente HTTP (navegador) debe manejar esta respuesta
+        // (redirección y almacenamiento del token JWT).
+        return ResponseEntity.ok(response);
     }
 }

@@ -3,6 +3,7 @@ package com.sgp.user.profile.service;
 import com.sgp.user.profile.dto.ProfileResponse;
 import com.sgp.user.profile.dto.PasswordUpdateRequest;
 import com.sgp.user.profile.dto.ProfileUpdateRequest;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Interfaz para la gestión del perfil del usuario autenticado.
@@ -29,4 +30,8 @@ public interface UserProfileService {
      * @param request DTO con la contraseña actual y la nueva contraseña.
      */
     void changeMyPassword(PasswordUpdateRequest request);
+
+    // --- NUEVO: Dar de Baja (Borrado Lógico) por el Propio Usuario ---
+    @Transactional
+    void softDeleteMyAccount();
 }
