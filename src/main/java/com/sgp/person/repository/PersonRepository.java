@@ -34,7 +34,16 @@ public interface PersonRepository extends JpaRepository<Person, Long> {
             String identificationType,
             String identificationNumber);
 
-// ⭐ NUEVO MÉTODO PARA PAGINACIÓN POR PARROQUIA ⭐
+    /**
+     * ⭐ NUEVO MÉTODO CRÍTICO PARA EL REGISTRO SEGURO ⭐
+     * Busca una Persona por identificación, PERO solo si aún NO está vinculada a un usuario (UserIsNull).
+     * Esto previene que se re-registren o secuestren cuentas existentes.
+     */
+    Optional<Person> findByIdentificationTypeAndIdentificationNumberAndUserIsNull(
+            String identificationType,
+            String identificationNumber);
+
+    // ⭐ NUEVO MÉTODO PARA PAGINACIÓN POR PARROQUIA ⭐
     /**
      * Retorna una página de Personas asociadas a un ID de Parroquia específico, aplicando paginación y ordenamiento.
      * @param parishId ID de la parroquia.

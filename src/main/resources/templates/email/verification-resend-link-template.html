@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Enlace de Verificación - SGP</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .header { background-color: #007BFF; /* Azul Reenvío */ color: #ffffff; padding: 25px 20px; text-align: center; border-radius: 8px 8px 0 0;}
+        .header h1 { margin: 0; font-size: 24px; }
+        .content { padding: 30px; line-height: 1.7; color: #333333; }
+        .content p { margin-bottom: 18px; }
+        .button-container { text-align: center; margin: 30px 0; }
+        .button { background-color: #007BFF; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; transition: background-color 0.3s ease; font-size: 16px; }
+        .button:hover{ background-color: #0056b3; cursor:pointer; }
+        .footer { background-color: #eeeeee; color: #777777; padding: 20px; text-align: center; font-size: 12px; border-top: 1px solid #dddddd; }
+        .warning { color: #dc3545; font-weight: bold; margin-top: 20px; text-align: center; }
+        a { color: #007BFF; text-decoration: none; }
+        strong { font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>SGP - Nuevo Enlace de Verificación Solicitado</h1>
+    </div>
+    <div class="content">
+        <p>Hola <strong th:text="${firstName}">[Nombre del Usuario]</strong>,</p>
+
+        <p>Has solicitado un **nuevo enlace** para activar tu cuenta SGP. Cualquier enlace anterior ha sido invalidado.</p>
+        <p>Haz clic en el botón de abajo para activar tu cuenta:</p>
+
+        <div class="button-container">
+            <!-- La URL segura (nueva) se inyecta aquí -->
+            <a th:href="${verificationLink}" class="button" target="_blank">Activar Mi Cuenta</a>
+        </div>
+
+        <p class="warning">
+            <strong>Importante:</strong> Este nuevo enlace también es de un solo uso y expira pronto.
+        </p>
+
+        <p>Si no solicitaste este reenvío, puedes ignorar este mensaje.</p>
+
+        <p>Saludos cordiales,<br/>
+            El equipo de SGP</p>
+    </div>
+    <div class="footer">
+        <p>Este es un correo electrónico automático, por favor no responda.</p>
+        <p>&copy; <span th:text="${#dates.year(#dates.createNow())}">2024</span> SGP. Todos los derechos reservados.</p>
+    </div>
+
+
+</div>
+</body>
+</html>
