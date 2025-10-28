@@ -471,6 +471,58 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
+    // =================================================================================
+    // ⭐⭐ NUEVOS MANEJADORES DE ESTADO DE CUENTA (AuthServiceImpl) ⭐⭐
+    // =================================================================================
+
+    // 27: Manejador para cuenta suspendida por inactividad (AccountSuspendedException) -> HTTP 403 Forbidden
+    @ExceptionHandler(AccountSuspendedException.class)
+    public ResponseEntity<ErrorResponse> handleAccountSuspendedException(
+            AccountSuspendedException ex, HttpServletRequest request) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Account Suspended")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
+    // 28: Manejador para cuenta bloqueada por intentos fallidos (AccountBlockedException) -> HTTP 401 Unauthorized
+    @ExceptionHandler(AccountBlockedException.class)
+    public ResponseEntity<ErrorResponse> handleAccountBlockedException(
+            AccountBlockedException ex, HttpServletRequest request) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error("Account Blocked")
+                // El mensaje incluye la razón (ej: intentos fallidos)
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    // 29: Manejador para cuenta dada de baja/borrado lógico (AccountDeactivatedException) -> HTTP 403 Forbidden
+    @ExceptionHandler(AccountDeactivatedException.class)
+    public ResponseEntity<ErrorResponse> handleAccountDeactivatedException(
+            AccountDeactivatedException ex, HttpServletRequest request) {
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Account Deactivated")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
 
 
     // 2x. Manejo genérico (Fallback) -> HTTP 500

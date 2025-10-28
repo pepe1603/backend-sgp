@@ -90,4 +90,24 @@ public class AuthController {
         // (redirección y almacenamiento del token JWT).
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Endpoint para solicitar un enlace de reactivación de cuenta suspendida.
+     * Ruta: POST /api/v1/auth/reactivate/request
+     */
+    @PostMapping("/reactivate/request")
+    public ResponseEntity<String> requestReactivationLink(@Valid @RequestBody ReactivationRequest request) {
+        authService.requestReactivationLink(request.getEmail());
+        return ResponseEntity.ok("Si la cuenta existe y está suspendida, se ha enviado un enlace de reactivación a su email.");
+    }
+
+    /**
+     * Endpoint que consume el token de Reactivación.
+     * Ruta: POST /api/v1/auth/reactivate/confirm?token={token}
+     */
+    @PostMapping("/reactivate/confirm")
+    public ResponseEntity<String> confirmReactivation(@RequestParam String token) {
+        authService.confirmReactivation(token);
+        return ResponseEntity.ok("Su cuenta ha sido reactivada exitosamente. Ahora puede iniciar sesión.");
+    }
 }

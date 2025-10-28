@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cuenta Suspendida - SGP</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); overflow: hidden; }
+    .header { background-color: #F44336; /* Rojo Suspensión */ color: #ffffff; padding: 25px 20px; text-align: center; border-radius: 8px 8px 0 0;}
+    .header h1 { margin: 0; font-size: 24px; }
+    .content { padding: 30px; line-height: 1.7; color: #333333; }
+    .content p { margin-bottom: 18px; }
+    .footer { background-color: #eeeeee; color: #777777; padding: 20px; text-align: center; font-size: 12px; border-top: 1px solid #dddddd; }
+    .important-note { color: #F44336; font-weight: bold; font-size: 1.1em; margin-top: 20px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Notificación de Suspensión de Cuenta</h1>
+  </div>
+  <div class="content">
+    <p>Estimado(a) <strong th:text="${firstName}">
+
+      $$Nombre de Usuario$$
+
+    </strong>,</p>
+
+    <p class="important-note">
+      Te informamos que tu cuenta en el Sistema de Gestión Parroquial (SGP) ha sido suspendida debido a **inactividad prolongada (1 año)**.
+    </p>
+
+    <p>La suspensión es una medida de seguridad y optimización de recursos. Tu cuenta ahora se encuentra deshabilitada y no podrás iniciar sesión.</p>
+
+    <p><strong>¿Qué pasa con mis datos?</strong><br/>
+      Tus datos y registros permanecen seguros. Si deseas reactivar tu cuenta en el futuro, por favor contacta al administrador del sistema, proporcionando tu email y nombre completo.</p>
+
+    <p>Agradecemos tu comprensión.</p>
+
+    <p>Saludos cordiales,<br/>
+      El equipo de SGP</p>
+
+
+  </div>
+  <div class="footer">
+    <p>Este es un correo electrónico automático. Por favor, no responda a este mensaje.</p>
+    <p>&copy; <span th:text="${#dates.year(#dates.createNow())}">2024</span> SGP. Todos los derechos reservados.</p>
+  </div>
+
+</div>
+</body>
+</html>

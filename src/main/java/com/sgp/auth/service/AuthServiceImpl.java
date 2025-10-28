@@ -21,6 +21,7 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,6 +32,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -46,6 +48,13 @@ public class AuthServiceImpl implements AuthService {
     private String frontendVerificationUrl;
     @Value("${app.frontend.magic-link-path}")
     private String frontendMagicLogin;
+    @Value("${app.frontend.reactivation-path}")
+    private String frontendReactivationPath;
+
+    // Constante para el umbral de inactividad (1 año)
+    private static final Duration INACTIVITY_DURATION = Duration.ofDays(365);
+    public static final String INACTIVITY_PREFIX = "inactivity:user:"; // Prefijo para las claves de inactividad
+
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -59,6 +68,44 @@ public class AuthServiceImpl implements AuthService {
     private final PersonRepository personRepository;
     private final EntityManager entityManager;
     private final OtpAttemptService otpAttemptService;
+    private final RedisTemplate<String, String> redisStringTemplate;
+
+    // =========================================================================
+    //  ⭐ MÉTODOS DE VALIDACIÓN DE ESTADO (NUEVOS) ⭐
+    // =========================================================================
+
+    /**
+     * Valida el estado de un usuario para cualquier flujo que requiera que la cuenta
+     * esté activa lógicamente, no bloqueada y, opcionalmente, habilitada.
+     * @param user El usuario a validar.
+     * @param requireEnabled Si es true, lanza excepción si user.isEnabled() es false.
+     * Esto es para LOGIN/MAGIC_LINK.
+     */
+    private void checkAccountStatusOrThrow(User user, boolean requireEnabled) {
+        String email = user.getEmail();
+
+        // 1. Borrado Lógico (Inactivo)
+        if (!user.isActive()) {
+            throw new AccountDeactivatedException("La cuenta del usuario " + email + " ha sido dada de baja.");
+        }
+
+        // 2. Bloqueado por Intentos (Asumiendo que LoginAttemptService maneja el bloqueo)
+        if (loginAttemptService.isBlocked(email)) {
+            throw new AccountBlockedException("Su cuenta se encuentra temporalmente bloqueada debido a múltiples intentos fallidos. Intente más tarde.");
+        }
+
+        // 3. Estado Habilitado/Verificado (Borrado Lógico, Suspensión por Inactividad, Registro no completado)
+        if (requireEnabled && !user.isEnabled()) {
+            // Diferenciamos si es por SUSPENSIÓN (inactividad) o VERIFICACIÓN PENDIENTE
+            if (user.getLastLoginDate() != null) {
+                // Si alguna vez inició sesión, está suspendida por inactividad
+                throw new AccountSuspendedException("Su cuenta ha sido suspendida por inactividad prolongada. Solicite la reactivación.");
+            } else {
+                // Si nunca inició sesión, no ha completado el registro
+                throw new AccountNotVerifiedException("Su cuenta no ha sido verificada. Por favor, verifique su email o solicite un reenvío.");
+            }
+        }
+    }
 
     // --- FLUJO DE REGISTRO (CON VERIFICACIÓN POR ENLACE SEGURO) ---
 
@@ -145,18 +192,26 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado."));
 
+        // ⭐ VALIDACIÓN AÑADIDA: Debe estar activo lógicamente y no bloqueado ⭐
+        checkAccountStatusOrThrow(user, false);
+
         if (user.isEnabled()) {
             throw new AccountAlreadyVerifiedException("La cuenta de email " + email + " ya está verificada. Puede iniciar sesión.");
         }
 
-        // 1. Eliminar cualquier token existente
+        // 1. VALIDACIÓN ESPECÍFICA: No permitir reenvío si la cuenta fue suspendida (inactividad)
+        if (user.getLastLoginDate() != null) {
+            throw new AccountSuspendedException("Su cuenta fue suspendida por inactividad. Use el flujo de 'Reactivación'.");
+        }
+
+        // 2. Eliminar cualquier token existente
         verificationTokenRepository.deleteByUser(user);
         entityManager.flush();
 
-        // 2. Generar y Guardar el nuevo Token UUID
+        // 3. Generar y Guardar el nuevo Token UUID
         String newToken = generateAndSaveVerificationToken(user, TokenType.ACCOUNT_VERIFICATION);
 
-        // 3. Enviar el Email con el nuevo enlace seguro
+        // 4. Enviar el Email con el nuevo enlace seguro
         sendVerificationLinkResendEmail(user, newToken);
     }
 
@@ -256,14 +311,12 @@ public class AuthServiceImpl implements AuthService {
         String email = request.getEmail();
 
         try {
-
             //verficar si esta habilitado
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
 
-            if (!user.isEnabled()) {
-                throw new AccountNotVerifiedException("Su cuenta no ha sido verificada. Por favor, verifique su email o solicite un reenvío.");
-            }
+            // ⭐ VALIDACIÓN AÑADIDA: El usuario debe estar activo, no bloqueado y habilitado ⭐
+            checkAccountStatusOrThrow(user, true);
 
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, request.getPassword())
@@ -272,6 +325,14 @@ public class AuthServiceImpl implements AuthService {
             loginAttemptService.recordSuccessfulAttempt(email);
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            // ⭐ 1. REGISTRO DE INACTIVIDAD EN REDIS (TTL de 1 año) ⭐
+            recordUserActivity(email);
+
+            // ⭐ 2. ACTUALIZAR LAST_LOGIN_DATE EN DB ⭐
+            updateLastLoginDate(email);
+
+            loginAttemptService.recordSuccessfulAttempt(email);
+
             String jwtToken = jwtService.generateToken(userDetails);
             Set<String> roles = userDetails.getAuthorities().stream().map(auth -> auth.getAuthority()).collect(java.util.stream.Collectors.toSet());
 
@@ -288,6 +349,69 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    // --- FLUJO DE REACTIVACIÓN DE CUENTA SUSPENDIDA (NUEVO) ---
+
+    @Transactional
+    @Override
+    public void requestReactivationLink(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado."));
+
+        // ⭐ VALIDACIÓN CLAVE: NO debe estar Borrado/Bloqueado, pero SÍ debe estar Inhabilitado ⭐
+        // Usamos requireEnabled=false porque estamos buscando una cuenta inhabilitada (suspendida o no verificada)
+        // Pero aún así queremos detectar si está bloqueada o borrada lógicamente.
+        checkAccountStatusOrThrow(user, false);
+
+        // 1. VALIDACIÓN ESPECÍFICA: Si ya está habilitada, no necesita reactivación.
+        if (user.isEnabled()) {
+            throw new AccountAlreadyVerifiedException("Su cuenta ya está activa. Intente iniciar sesión.");
+        }
+
+        // 2. VALIDACIÓN ESPECÍFICA: Si nunca inició sesión, debe usar el flujo de reenvío de verificación.
+        if (user.getLastLoginDate() == null) {
+            throw new AccountNotVerifiedException("Su cuenta no ha completado el registro. Use el flujo de 'Reenviar Verificación'.");
+        }
+
+        // 3. Limpiar tokens viejos y generar uno nuevo de Reactivación
+        verificationTokenRepository.deleteByUser(user);
+        entityManager.flush();
+
+        String token = generateAndSaveVerificationToken(user, TokenType.ACCOUNT_REACTIVATION);
+
+        // 4. Enviar el Email con el nuevo enlace seguro
+        sendReactivationLinkEmail(user, token);
+        log.info("Enlace de reactivación generado para {}", email);
+    }
+
+    // El método confirmReactivation no necesita checkAccountStatusOrThrow, ya que el token
+    // solo es válido si la cuenta fue deshabilitada recientemente y no fue borrada
+    // mientras el token estaba activo. Las comprobaciones de token son suficientes.
+    @Transactional
+    @Override
+    public void confirmReactivation(String token) {
+        VerificationToken reactivationToken = verificationTokenRepository.findByTokenAndType(token, TokenType.ACCOUNT_REACTIVATION)
+                .orElseThrow(() -> new VerificationCodeInvalidException("El enlace de reactivación es inválido o ya ha sido utilizado."));
+
+        // 1. Comprobar Expiración
+        if (reactivationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            verificationTokenRepository.delete(reactivationToken);
+            throw new VerificationCodeExpiredException("El enlace de reactivación ha expirado. Por favor, solicite un nuevo enlace.");
+        }
+
+        // 2. Habilitar la cuenta
+        User user = reactivationToken.getUser();
+        user.setEnabled(true);
+        userRepository.save(user); // Guarda el estado habilitado
+
+        // 3. Registrar actividad (Refresca el TTL de inactividad)
+        recordUserActivity(user.getEmail());
+        updateLastLoginDate(user.getEmail()); // Actualiza la fecha de login
+
+        // 4. Eliminar el Token (consumido)
+        verificationTokenRepository.delete(reactivationToken);
+    }
+
+
     @Override
     @Transactional
     public void requestMagicLink(MagicLinkRequest request) {
@@ -296,9 +420,12 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el email: " + email));
 
-        if (!user.isEnabled()) {
-            throw new AccountNotVerifiedException("Su cuenta no ha sido verificada. Por favor, verifique su email o solicite un reenvío.");
-        }
+        // ⭐ VALIDACIÓN AÑADIDA: Debe estar activo, no bloqueado y habilitado para solicitar link ⭐
+        checkAccountStatusOrThrow(user, true);
+
+        // Antes de generar el link, refrescar la actividad (Se considera login exitoso)
+        recordUserActivity(email);
+        updateLastLoginDate(email);
 
         verificationTokenRepository.deleteByUser(user);
         entityManager.flush();
@@ -320,9 +447,17 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = magicToken.getUser();
+
+        // ⭐ VALIDACIÓN AÑADIDA: Debe estar activo, no bloqueado y habilitado para consumir link ⭐
+        checkAccountStatusOrThrow(user, true);
+
         if (!user.isEnabled()) {
             throw new AccountNotVerifiedException("Su cuenta no está activa. No puede iniciar sesión.");
         }
+
+        // ⭐ REGISTRO DE ACTIVIDAD LUEGO DEL LOGIN POR MAGIC LINK ⭐
+        recordUserActivity(user.getEmail());
+        updateLastLoginDate(user.getEmail());
 
         verificationTokenRepository.delete(magicToken);
 
@@ -338,6 +473,45 @@ public class AuthServiceImpl implements AuthService {
                 .roles(roles)
                 .tokenType("Bearer")
                 .build();
+    }
+
+    // --- MÉTODOS PRIVADOS AUXILIARES ---
+
+    /**
+     * Envía el enlace seguro para reactivar una cuenta suspendida.
+     */
+    private void sendReactivationLinkEmail(User user, String token) {
+        Map<String, Object> model = createEmailModel(user);
+
+        // Crear el enlace de reactivación: BASE_URL + PATH + token
+        String reactivationLink = frontendBaseUrl + frontendReactivationPath + "?token=" + token;
+
+        model.put("reactivationLink", reactivationLink);
+
+        mailProducer.sendMailMessage(
+                user.getEmail(),
+                "Solicitud de Reactivación de Cuenta SGP",
+                "email/reactivation-link-template",
+                model
+        );
+    }
+
+    /**
+     * Registra la actividad de un usuario en Redis, refrescando el TTL de 1 año.
+     * Si la clave expira, el listener de Redis suspenderá la cuenta.
+     */
+    private void recordUserActivity(String email) {
+        String key = INACTIVITY_PREFIX + email;
+        // El valor no importa, solo la existencia de la clave y su TTL.
+        redisStringTemplate.opsForValue().set(key, "active", INACTIVITY_DURATION);
+        log.debug("Actividad de usuario {} registrada en Redis con TTL de {} días.", email, INACTIVITY_DURATION.toDays());
+    }
+
+    /**
+     * Actualiza el campo lastLoginDate en la base de datos.
+     */
+    private void updateLastLoginDate(String email) {
+        userRepository.updateLastLoginDateByEmail(LocalDateTime.now(), email);
     }
 
     // --- MÉTODOS DE ENVÍO DE EMAILS (EXISTENTES) ---
@@ -373,7 +547,7 @@ public class AuthServiceImpl implements AuthService {
     private void sendVerificationReminderEmail(User user, String token) {
         Map<String, Object> model = createEmailModel(user);
 
-        String verificationLink = frontendBaseUrl + "/auth/verify-account?token=" + token;
+        String verificationLink = frontendVerificationUrl + "?token=" + token;
 
         model.put("verificationLink", verificationLink);
         model.put("expireMinutes", 120);

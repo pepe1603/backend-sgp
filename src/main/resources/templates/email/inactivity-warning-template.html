@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advertencia de Suspensión por Inactividad - SGP</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); overflow: hidden; }
+    .header { background-color: #FF9800; /* Naranja Advertencia */ color: #ffffff; padding: 25px 20px; text-align: center; border-radius: 8px 8px 0 0;}
+    .header h1 { margin: 0; font-size: 24px; }
+    .content { padding: 30px; line-height: 1.7; color: #333333; }
+    .content p { margin-bottom: 18px; }
+    .button-container { text-align: center; margin: 30px 0; }
+    .button { background-color: #FF9800; color: white !important; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; transition: background-color 0.3s ease; font-size: 16px; }
+    .button:hover{ background-color: #fb8c00; cursor:pointer; }
+    .footer { background-color: #eeeeee; color: #777777; padding: 20px; text-align: center; font-size: 12px; border-top: 1px solid #dddddd; }
+    .date-highlight { color: #d32f2f; font-weight: bold; font-size: 1.1em; }
+    a { color: #FF9800; text-decoration: none; }
+    strong { font-weight: bold; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Pre-Aviso de Suspensión de Cuenta</h1>
+  </div>
+  <div class="content">
+    <p>Estimado(a) <strong th:text="${firstName}">
+
+      $$Nombre de Usuario$$
+
+    </strong>,</p>
+
+    <p>Te escribimos para informarte que tu cuenta en el Sistema de Gestión Parroquial (SGP) se encuentra inactiva. Hemos notado que no has iniciado sesión por un período considerable de tiempo.</p>
+
+    <p>Según nuestras políticas, si no inicias sesión antes de la siguiente fecha, tu cuenta será suspendida automáticamente:</p>
+
+    <p class="date-highlight">
+      Fecha Límite: <span th:text="${#temporals.format(suspensionDate, 'dd-MM-yyyy')}">\[30-10-2025\]</span>
+    </p>
+
+    <p>Para evitar la suspensión de tu cuenta y mantenerla activa, por favor haz clic en el botón a continuación para iniciar sesión ahora mismo:</p>
+
+    <div class="button-container">
+      <!-- Enlace de inicio de sesión genérico -->
+      <a th:href="${loginLink}" class="button" target="_blank">Iniciar Sesión Ahora</a>
+    </div>
+
+    <p>Si deseas mantener tu cuenta activa, por favor accede antes de la fecha límite. De lo contrario, tu cuenta quedará deshabilitada, aunque tus datos se conservarán.</p>
+
+    <p>Saludos cordiales,<br/>
+      El equipo de SGP</p>
+
+
+  </div>
+  <div class="footer">
+    <p>Este es un correo electrónico automático. Por favor, no responda a este mensaje.</p>
+    <p>&copy; <span th:text="${#dates.year(#dates.createNow())}">2024</span> SGP. Todos los derechos reservados.</p>
+  </div>
+
+</div>
+</body>
+</html>

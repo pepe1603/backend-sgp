@@ -12,6 +12,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -39,6 +40,14 @@ public class User extends Auditable implements UserDetails {
 
     @Column(name = "force_password_change")
     private boolean forcePasswordChange = false;
+
+    // ⭐ CAMPO AGREGADO 1: Fecha del último inicio de sesión (Clave para la inactividad) ⭐
+    @Column(name = "last_login_date", nullable = false)
+    private LocalDateTime lastLoginDate = LocalDateTime.now();
+
+    // ⭐ CAMPO AGREGADO 2: Fecha del último aviso de suspensión enviado (Clave para evitar spam diario) ⭐
+    @Column(name = "last_warning_sent_date")
+    private LocalDateTime lastWarningSentDate; // Puede ser null si nunca se ha enviado.
 
     // Relación OneToOne con Person.
     // 'mappedBy' indica que la columna FK (user_id) está en la entidad Person.

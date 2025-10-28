@@ -2,9 +2,11 @@ package com.sgp.user.repository;
 
 import com.sgp.common.enums.RoleName;
 import com.sgp.user.model.User;
+import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
@@ -36,6 +38,42 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return El número de usuarios con ese rol.
      */
     long countByRolesName(RoleName name);
+
+    // ⭐ NUEVA CONSULTA: Actualiza el lastLoginDate eficientemente ⭐
+    @Modifying
+    @Query("UPDATE User u SET u.lastLoginDate = :date WHERE u.email = :email")
+    void updateLastLoginDateByEmail(@Param("date") LocalDateTime date, @Param("email") String email);
+
+    // ⭐ NUEVA CONSULTA: Actualiza el estado 'enabled' eficientemente (para la suspensión) ⭐
+    @Modifying
+    @Query("UPDATE User u SET u.enabled = :enabled WHERE u.email = :email")
+    void updateEnabledStatusByEmail(@Param("enabled") boolean enabled, @Param("email") String email);
+
+    // ⭐ NUEVA CONSULTA: Actualiza la fecha de último aviso de suspensión ⭐
+    @Modifying
+    @Query("UPDATE User u SET u.lastWarningSentDate = :date WHERE u.id = :id")
+    void updateLastWarningSentDate(@Param("id") Long id, @Param("date") LocalDateTime date);
+
+
+    // ⭐ CONSULTA OPTIMIZADA: Busca usuarios que necesitan pre-aviso de suspensión ⭐
+    /**
+     * Busca usuarios que están HABILITADOS (isEnabled = true), cuya fecha de último login
+     * cae dentro del rango de pre-aviso (ej. inactivos entre 11 y 12 meses)
+     * Y que NO han sido avisados recientemente (lastWarningSentDate es null o anterior a la ventana de aviso).
+     * * @param suspensionThreshold La fecha más antigua (Hoy - 12 meses). Logins deben ser POSTERIORES.
+     * @param warningThreshold La fecha más reciente (Hoy - 11 meses). Logins deben ser ANTERIORES.
+     * @return Lista de usuarios que necesitan el pre-aviso.
+     */
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.person p WHERE u.isEnabled = true " +
+            "AND u.lastLoginDate > :suspensionThreshold " +
+            "AND u.lastLoginDate < :warningThreshold " +
+            "AND (u.lastWarningSentDate IS NULL OR u.lastWarningSentDate < :suspensionThreshold)")
+    List<User> findUsersPendingSuspensionWarning(
+            @Param("suspensionThreshold") LocalDateTime suspensionThreshold,
+            @Param("warningThreshold") LocalDateTime warningThreshold);
+
+
+
 
     /**
      * Optimiza la búsqueda de usuarios para el panel de administración

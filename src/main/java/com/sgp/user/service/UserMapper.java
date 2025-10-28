@@ -23,6 +23,9 @@ public interface UserMapper {
     @Mapping(target = "updatedAt", source = "updatedAt")
     @Mapping(target = "updatedBy", source = "updatedBy")
     @Mapping(target = "forcePasswordChange", source = "forcePasswordChange")
+    // ⭐ Mapeos de los campos de inactividad ⭐
+    @Mapping(target = "lastLoginDate", source = "lastLoginDate")
+    @Mapping(target = "lastWarningSentDate", source = "lastWarningSentDate")
     UserManagementResponse toManagementResponse(User user);
 
 
@@ -38,6 +41,9 @@ public interface UserMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
+    // ⭐ Ignorar los campos de inactividad en el request de actualización ⭐
+    @Mapping(target = "lastLoginDate", ignore = true)
+    @Mapping(target = "lastWarningSentDate", ignore = true)
     void updateEntityFromRequest(UserUpdateRequest request, @MappingTarget User user);
 
 
